@@ -3,7 +3,7 @@ mod lexer_and_parser;
 // Uses
 use std::io;
 // DEBUG use lexer_and_parser::tokenizer::Tokenizer as tokenizer;
-use lexer_and_parser::ast::Node;
+use lexer_and_parser::ast;
 use lexer_and_parser::parser::{ParseError, Parser};
 
 fn main() {
@@ -12,53 +12,48 @@ fn main() {
     io::stdin()
         .read_line(&mut input)
         .expect("Failed to read input");
-    let _capture = evaluate(input);
-}
+    //let _capture = evaluate(input);
 
-fn print_tree(node: Node, mut indent: String) -> () {
+    match evaluate(input) {
+        Ok(val) => println!("> {:?}", val),
+        Err(_) => println!("Couldnt evaluate"),
+    }
+}
+// For Debugging purposes
+fn print_tree(node: ast::Node, mut indent: String) -> () {
+    //println!("{:?}", node);
     if indent.is_empty() {
-        indent = " ".to_string();
+        indent = "├──".to_string();
     }
     match node {
-        // Return if this is the last node
-        Node::Number(n) => {
-            println!("{0} {1}", indent, n);
-            return;
-        },
-        Node::Add(ref l_expr, ref r_expr) => {
+        ast::Node::BinaryExpr {
+            ref l_expr,
+            ref operator,
+            ref r_expr,
+        } => {
             print_tree(*l_expr.clone(), indent.clone());
-            indent = " ".to_string();
-            println!("{0} +", indent);
-            print_tree(*r_expr.clone(), indent.clone());
-        },
-        Node::Multiply(ref l_expr, ref r_expr) => {
-            indent = "    ".to_string();
-            print_tree(*l_expr.clone(), indent.clone());
-            println!("{0} *", indent);
-            print_tree(*r_expr.clone(), indent.clone());
+            if l_expr.is_binary_expr() {
+            } 
+            else {
+                println!("{0}{1:?}", indent, l_expr);
+            }
+
+            println!("{0}{1:?}", indent, operator);
+            println!("{0}{1:?}", indent, r_expr);
+            indent = "   ├─".to_string();
+            print_tree(*r_expr.clone(), indent);
         }
-        Node::Divide(ref l_expr, ref r_expr) => {
-            indent = "    ".to_string();
-            print_tree(*l_expr.clone(), indent.clone());
-            println!("{0} /", indent);
-            print_tree(*r_expr.clone(), indent.clone());
-        }
-        _ => return
+        _ => return,
     }
 }
 
 // Function to invoke Parser and evaluate expression
 fn evaluate(expr: String) -> Result<f64, ParseError> {
-    // Remove all whitespace
-    let expr = expr.split_whitespace().collect::<String>();
+    let expr = expr.split_whitespace().collect::<String>(); // remove whitespace chars
     let mut math_parser = Parser::new(&expr)?;
     let ast = math_parser.parse()?;
 
-    //EXPERIMENTAL
-    let mut i = 0;
-    let mut node = ast;
-    print_tree(node, String::new());
+    //print_tree(ast.clone(), String::new());
 
-    let nr: f64 = 12.0;
-    Ok(nr)
+    Ok(ast::eval(ast)?)
 }

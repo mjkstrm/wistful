@@ -15,6 +15,7 @@ pub enum Token {
 }
 
 // Arithmetic precedences
+#[derive(PartialEq, PartialOrd)]
 pub enum Precedence {
     Default, // 0,
     AddAndSubtract,
@@ -22,6 +23,7 @@ pub enum Precedence {
     Power,
     NegativeValue
 }
+
 
 // Function to get operator precedence
 impl Token {

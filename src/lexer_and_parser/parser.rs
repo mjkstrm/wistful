@@ -1,5 +1,7 @@
 
 
+use core::num;
+
 // Uses
 use super::tokenizer::Tokenizer;
 use super::token::{Precedence, Token};
@@ -32,10 +34,7 @@ impl<'a> Parser<'a> {
 
     // Method in the public interface for parsing the expression
     pub fn parse(&mut self) -> Result<Node, ParseError> {
-        let ast = self.generate_ast()?;
-
-        
-
+        let ast = self.generate_ast(Precedence::Default)?;
         Ok(ast)
     }
 }
@@ -52,30 +51,57 @@ impl<'a> Parser<'a> {
         Ok(())
     }
 
-    fn generate_ast(&mut self) -> Result<Node, ParseError> {
-        /* 
-        while self.current_token != Token::EOF {
-            self.generate_ast();
-        }*/
-        let mut l_expr = self.parse_primary_expr()?;
-        // Start creating the tree recursively
-        while self.current_token != Token::EOF {
-            let r_expr = self.parse_expr(l_expr)?;
-            self.nodes.push(r_expr.clone());
-            l_expr = r_expr;   
-        }
+    fn generate_ast(&mut self, precedence: Precedence) -> Result<Node, ParseError> {
+        let mut l_expr = self.get_root_expr()?;
         
+        // Start creating the tree recursively
+        while precedence < self.current_token.get_precedence() {
+            if self.current_token == Token::EOF {
+                break;
+            }
+            let r_expr = self.parse_expr(l_expr)?;
+            l_expr = r_expr;
+        }
         Ok(l_expr)
     }
 
-    fn parse_primary_expr(&mut self) -> Result<Node, ParseError> {
+    fn get_root_expr(&mut self) -> Result<Node, ParseError> {
         let token = self.current_token.clone();
         match token {
+            Token::Subtract => {
+                self.get_next_token()?;
+                let expr = self.generate_ast(Precedence::NegativeValue)?;
+                Ok(Node::NegativeNumberExpression(Box::new(expr)))
+            }
             Token::Num(i) => {
-                let _capture = self.get_next_token();
-                Ok(Node::Number(i))
+                self.get_next_token()?;
+                Ok(Node::NumberExpression(i))
+            }
+            Token::LeftParenthese => {
+                self.get_next_token()?;
+                let l_expr = self.generate_ast(Precedence::Default)?;
+                self.check_paren(Token::RightParenthese)?;
+
+                if self.current_token == Token::LeftParenthese {
+                    let r_expr = self.generate_ast(Precedence::MultiplyAndDivide)?;
+                    return Ok(Node::BinaryExpr { l_expr: Box::new(l_expr), operator: Token::Multiply, r_expr: Box::new(r_expr) })
+                }
+
+                Ok(l_expr)
             }
             _ => return Err(ParseError::InvalidOperator("Bad start".to_string()))
+        }
+    }
+
+    fn check_paren(&mut self, rightParen: Token) -> Result<(), ParseError> {
+        if rightParen == self.current_token {
+            self.get_next_token()?;
+            Ok(())
+        } else {
+            Err(ParseError::InvalidOperator(format!(
+                "Expected {:?}, got {:?}",
+                rightParen, self.current_token
+            )))
         }
     }
 
@@ -85,25 +111,40 @@ impl<'a> Parser<'a> {
         match token {
             Token::Add => {
                 let _capture = self.get_next_token();
-                let r_expr = self.generate_ast()?;
-                Ok(Node::Add(Box::new(l_expr), Box::new(r_expr)))
+                let r_expr = self.generate_ast(Precedence::AddAndSubtract)?;
+                
+                Ok(Node::BinaryExpr { l_expr: Box::new(l_expr), operator: Token::Add, r_expr: Box::new(r_expr) })
             }
             Token::Multiply => {
                 let _capture = self.get_next_token();
-                let r_expr = self.generate_ast()?;
-                Ok(Node::Multiply(Box::new(l_expr), Box::new(r_expr)))
+                let r_expr = self.generate_ast(Precedence::MultiplyAndDivide)?;
+                Ok(Node::BinaryExpr { l_expr: Box::new(l_expr), operator: Token::Multiply, r_expr: Box::new(r_expr) })
             },
             Token::Divide => {
                 let _capture = self.get_next_token();
-                let r_expr = self.generate_ast()?;
-                Ok(Node::Divide(Box::new(l_expr), Box::new(r_expr)))
-            },
+                let r_expr = self.generate_ast(Precedence::MultiplyAndDivide)?;
+                Ok(Node::BinaryExpr { l_expr: Box::new(l_expr), operator: Token::Divide, r_expr: Box::new(r_expr) })
+            }
+            Token::Pow => {
+                let _capture = self.get_next_token();
+                let r_expr = self.generate_ast(Precedence::Power)?;
+                Ok(Node::BinaryExpr { l_expr: Box::new(l_expr), operator: Token::Pow, r_expr: Box::new(r_expr) })
+            }
             _ => return Err(ParseError::InvalidOperator("Bad token".to_string()))
         }
     }
 }
 
+// Handle error thrown from AST module
+
+impl std::convert::From<std::boxed::Box<dyn std::error::Error>> for ParseError {
+    fn from(_evalerr: std::boxed::Box<dyn std::error::Error>) -> Self {
+        return ParseError::UnableToParse("Unable to parse".into());
+    }
+}
+
 pub enum ParseError {
-    InvalidOperator(String)
+    InvalidOperator(String),
+    UnableToParse(String)
 }
 

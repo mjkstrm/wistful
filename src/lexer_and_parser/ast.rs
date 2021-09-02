@@ -1,25 +1,46 @@
 // Libraries
 use std::error;
 
+// Internal modules
+use super::token::Token;
 // Nodes for the syntax tree
-#[derive(Debug, Clone)]
-pub enum Node {
-    /*  
-        Almost each of the variants include 2 nodes,
-        so the tree can be built.
 
-        i.e 2+2*3
-        Add(2, Multiply(2, 3)) 
-    */
-    Add(Box<Node>, Box<Node>),
-    Subtract(Box<Node>, Box<Node>),
-    Multiply(Box<Node>, Box<Node>),
-    Divide(Box<Node>, Box<Node>),
-    Pow(Box<Node>, Box<Node>),
-    // only includes the negative value
-    NegativeValue(Box<Node>),
-    // number values
-    Number(f64),
-    // strings
-    String(String)
+#[derive(Debug, PartialEq, Clone)]
+pub enum Node {
+    NumberExpression(f64),
+    NegativeNumberExpression(Box<Node>),
+    BinaryExpr {
+        l_expr: Box<Node>,
+        operator: Token,
+        r_expr: Box<Node>
+    }
+}
+
+// Check wheter current node is an binary node
+impl Node {
+    pub fn is_binary_expr(&self) -> bool {
+        match self.clone() {
+            Node::BinaryExpr { l_expr, operator, r_expr } => true,
+            _ => false
+        }
+    }
+}
+
+// Evaluating arithmetics
+pub fn eval(expr: Node) -> Result<f64, Box<dyn error::Error>> {
+    use self::Node::*;
+    match expr {
+        NumberExpression(f) => Ok(f),
+        NegativeNumberExpression(f) => Ok(-eval(*f)?),
+        BinaryExpr { l_expr, operator, r_expr } => {
+            match operator {
+                Token::Add => Ok(eval(*l_expr)? + eval(*r_expr)?),
+                Token::Multiply => Ok(eval(*l_expr)? * eval(*r_expr)?),
+                Token::Divide => Ok(eval(*l_expr)? / eval(*r_expr)?),
+                Token::Pow => Ok(eval(*l_expr)?.powf(eval(*r_expr)?)),
+                // Fix this, bad implementation
+                _ => Err("Couldnt evaluate".into())
+            }
+        }
+    }
 }
