@@ -1,8 +1,4 @@
-
-
-use core::num;
-
-// Uses
+// Internal uses
 use super::tokenizer::Tokenizer;
 use super::token::{Precedence, Token};
 use super::ast::Node;
@@ -52,20 +48,21 @@ impl<'a> Parser<'a> {
     }
 
     fn generate_ast(&mut self, precedence: Precedence) -> Result<Node, ParseError> {
-        let mut l_expr = self.get_root_expr()?;
+        let mut l_expr = self.get_primary_expression()?;
         
         // Start creating the tree recursively
         while precedence < self.current_token.get_precedence() {
             if self.current_token == Token::EOF {
                 break;
             }
-            let r_expr = self.parse_expr(l_expr)?;
+            let r_expr = self.parse_binary_expression(l_expr)?;
             l_expr = r_expr;
         }
         Ok(l_expr)
     }
 
-    fn get_root_expr(&mut self) -> Result<Node, ParseError> {
+    // Parse primary expressions, Numbers, Negative values, Parentheses etc.
+    fn get_primary_expression(&mut self) -> Result<Node, ParseError> {
         let token = self.current_token.clone();
         match token {
             Token::Subtract => {
@@ -93,19 +90,20 @@ impl<'a> Parser<'a> {
         }
     }
 
-    fn check_paren(&mut self, rightParen: Token) -> Result<(), ParseError> {
-        if rightParen == self.current_token {
+    // Closing parenthese is always expected, if not found return error
+    fn check_paren(&mut self, right_paren: Token) -> Result<(), ParseError> {
+        if right_paren == self.current_token {
             self.get_next_token()?;
             Ok(())
         } else {
             Err(ParseError::InvalidOperator(format!(
                 "Expected {:?}, got {:?}",
-                rightParen, self.current_token
+                right_paren, self.current_token
             )))
         }
     }
 
-    fn parse_expr(&mut self, l_expr: Node) -> Result<Node, ParseError> {
+    fn parse_binary_expression(&mut self, l_expr: Node) -> Result<Node, ParseError> {
         // Clone our current token
         let token = self.current_token.clone();
         match token {
@@ -136,7 +134,6 @@ impl<'a> Parser<'a> {
 }
 
 // Handle error thrown from AST module
-
 impl std::convert::From<std::boxed::Box<dyn std::error::Error>> for ParseError {
     fn from(_evalerr: std::boxed::Box<dyn std::error::Error>) -> Self {
         return ParseError::UnableToParse("Unable to parse".into());

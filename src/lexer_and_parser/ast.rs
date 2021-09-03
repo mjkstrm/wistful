@@ -20,7 +20,7 @@ pub enum Node {
 impl Node {
     pub fn is_binary_expr(&self) -> bool {
         match self.clone() {
-            Node::BinaryExpr { l_expr, operator, r_expr } => true,
+            Node::BinaryExpr { l_expr: _, operator: _, r_expr: _ } => true,
             _ => false
         }
     }
