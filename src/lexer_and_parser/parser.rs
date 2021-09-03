@@ -1,3 +1,4 @@
+use std::fmt;
 // Internal uses
 use super::tokenizer::Tokenizer;
 use super::token::{Precedence, Token};
@@ -41,7 +42,7 @@ impl<'a> Parser<'a> {
     fn get_next_token(&mut self) -> Result<(), ParseError> {
         let next_token = match self.tokenizer.next() {
             Some(token) => token,
-            None => return Err(ParseError::InvalidOperator("Invalid character".to_string()))
+            None => return Err(ParseError::InvalidOperator("Invalid character".into()))
         };
         self.current_token = next_token;
         Ok(())
@@ -55,7 +56,8 @@ impl<'a> Parser<'a> {
             if self.current_token == Token::EOF {
                 break;
             }
-            let r_expr = self.parse_binary_expression(l_expr)?;
+            
+            let r_expr = self.parse_binary_expression(l_expr)?; 
             l_expr = r_expr;
         }
         Ok(l_expr)
@@ -139,9 +141,19 @@ impl std::convert::From<std::boxed::Box<dyn std::error::Error>> for ParseError {
         return ParseError::UnableToParse("Unable to parse".into());
     }
 }
-
+#[derive(Debug)]
 pub enum ParseError {
     InvalidOperator(String),
     UnableToParse(String)
 }
+
+impl fmt::Display for ParseError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match &self {
+            self::ParseError::UnableToParse(e) => write!(f, "{}", e),
+            self::ParseError::InvalidOperator(e) => write!(f, "{}", e),
+        }
+    }
+}
+
 

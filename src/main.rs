@@ -6,16 +6,28 @@ use lexer_and_parser::parser::{ParseError, Parser};
 
 fn main() {
     let mut input = String::new();
-    io::stdin()
-        .read_line(&mut input)
-        .expect("Failed to read input");
+    match io::stdin().read_line(&mut input) {
+            Ok(_) => {
+                match evaluate(input) {
+                    Ok(val) => println!("The computed number is {}\n", val),
+                    Err(e) => {
+                        println!("\x1b[0;31mParse error: {0}\x1b[0m", e);
+                    }
+                };
+            }
 
+            Err(error) => println!("error: {}", error),
+        }
+
+    /*
     match evaluate(input) {
         Ok(val) => println!("> {:?}", val),
-        Err(_) => println!("Could not evaluate"),
-    }
+        Err(e) => println!("\x1b[0;31mCould not evaluate input\x1b[0m"),
+    }*/
 }
-// For Debugging purposes
+
+// For Debugging purposes, allow(dead_code) removes warnings from unused code.
+#[allow(dead_code)]
 fn print_tree(node: ast::Node, mut indent: String) -> () {
     if indent.is_empty() {
         indent = "├──".to_string();
