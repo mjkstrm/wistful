@@ -1,6 +1,7 @@
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum Token {
+    Assignment,
     Add,
     Subtract,
     Multiply,
@@ -9,7 +10,8 @@ pub enum Token {
     LeftParenthese,
     RightParenthese,
     Num(f64),
-    String(String),
+    Literal(String),
+    Whitespace,
     EOF
 }
 

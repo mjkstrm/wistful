@@ -9,11 +9,18 @@ use super::token::Token;
 pub enum Node {
     NumberExpression(f64),
     NegativeNumberExpression(Box<Node>),
+    LiteralExpression(String),
     BinaryExpr {
         l_expr: Box<Node>,
         operator: Token,
         r_expr: Box<Node>
-    }
+    },
+    AssignmentExpression {
+        identifier: Box<Node>,
+        assignment_operator: Token,
+        expr: Box<Node>
+    },
+   
 }
 
 // Check wheter current node is an binary node
@@ -41,6 +48,7 @@ pub fn eval(expr: Node) -> Result<f64, Box<dyn error::Error>> {
                 // Fix this, bad implementation
                 _ => Err("Couldnt evaluate".into())
             }
-        }
+        },
+        _ => None
     }
 }

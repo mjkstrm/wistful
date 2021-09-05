@@ -67,6 +67,18 @@ impl<'a> Iterator for Tokenizer<'a> {
                     }
                 }
                 Some(Token::Num(number.parse::<f64>().unwrap()))
+            },
+            Some('a'..='z') => {
+                let mut characters = next_char?.to_string();
+                while let Some(next_char) = self.expr.peek() {
+                    if next_char.is_whitespace() {
+                        break;
+                    }
+                    else {
+                        characters.push(self.expr.next()?);
+                    }
+                }
+                Some(Token::Literal(characters))
             }
             // Operators
             Some('+') => Some(Token::Add),
@@ -74,10 +86,15 @@ impl<'a> Iterator for Tokenizer<'a> {
             Some('*') => Some(Token::Multiply),
             Some('/') => Some(Token::Divide),
             Some('^') => Some(Token::Pow),
+            Some('=') => Some(Token::Assignment),
             // Parentheses
             Some('(') => Some(Token::LeftParenthese),
             Some(')') => Some(Token::RightParenthese),
+            // Whitespace
+            //c if c?.is_whitespace() => Some(Token::Whitespace),
+            Some(' ') => Some(Token::Whitespace),
             // End of file
+            Some('\n') => Some(Token::EOF),
             None => Some(Token::EOF),
             Some(_) => None,
         }

@@ -9,7 +9,7 @@ fn main() {
     match io::stdin().read_line(&mut input) {
             Ok(_) => {
                 match evaluate(input) {
-                    Ok(val) => println!("The computed number is {}\n", val),
+                    Ok(val) => println!("> {}\n", val),
                     Err(e) => {
                         println!("\x1b[0;31mParse error: {0}\x1b[0m", e);
                     }
@@ -18,7 +18,6 @@ fn main() {
 
             Err(error) => println!("error: {}", error),
         }
-
     /*
     match evaluate(input) {
         Ok(val) => println!("> {:?}", val),
@@ -58,10 +57,11 @@ fn print_tree(node: ast::Node, mut indent: String) -> () {
 // Function to invoke Parser and evaluate expression
 fn evaluate(expr: String) -> Result<f64, ParseError> {
     // Remove whitespace chars
-    let expr = expr.split_whitespace().collect::<String>();
+    //let expr = expr.split_whitespace().collect::<String>();
     let mut math_parser = Parser::new(&expr)?;
     let ast = math_parser.parse()?;
     // Print out the syntax tree for debuggin purposes
+    println!("{:?}", ast);
     //print_tree(ast.clone(), String::new());
 
     Ok(ast::eval(ast)?)

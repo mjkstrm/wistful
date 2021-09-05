@@ -20,7 +20,9 @@ impl<'a> Parser<'a> {
         let mut lexer = Tokenizer::new(expr);
         let cur_token = match lexer.next() {
             Some(token) => token,
-            None => return Err(ParseError::InvalidOperator("Invalid character".into())),
+            None => { 
+                return Err(ParseError::InvalidOperator("Invalid character".into())) 
+            },
         };
         Ok(Parser {
             tokenizer: lexer,
@@ -40,11 +42,18 @@ impl<'a> Parser<'a> {
 impl<'a> Parser<'a> {
     // Move on to the next token to be parsed.
     fn get_next_token(&mut self) -> Result<(), ParseError> {
+        println!("CURRENT: {:?}", self.current_token);
         let next_token = match self.tokenizer.next() {
             Some(token) => token,
             None => return Err(ParseError::InvalidOperator("Invalid character".into()))
         };
-        self.current_token = next_token;
+        if next_token == Token::Whitespace {
+            println!("Shouldnt be here..");
+            self.get_next_token()?;
+        }
+        else {
+            self.current_token = next_token;
+        }
         Ok(())
     }
 
@@ -67,6 +76,7 @@ impl<'a> Parser<'a> {
     fn get_primary_expression(&mut self) -> Result<Node, ParseError> {
         let token = self.current_token.clone();
         match token {
+            // Retarded way to implement a negative integer
             Token::Subtract => {
                 self.get_next_token()?;
                 let expr = self.generate_ast(Precedence::NegativeValue)?;
@@ -88,6 +98,14 @@ impl<'a> Parser<'a> {
 
                 Ok(l_expr)
             }
+            Token::Literal(string) => {
+                self.get_next_token()?;
+                // Expecting an assignment after identifier
+                self.check_token(Token::Assignment)?;
+                let r_expr = self.generate_ast(Precedence::Default)?;
+                let literal_expr = Node::LiteralExpression(string); 
+                return Ok(Node::AssignmentExpression { identifier: Box::new(literal_expr), assignment_operator: Token::Assignment, expr: Box::new(r_expr) } )
+            }
             _ => return Err(ParseError::InvalidOperator("Bad start".to_string()))
         }
     }
@@ -101,6 +119,19 @@ impl<'a> Parser<'a> {
             Err(ParseError::InvalidOperator(format!(
                 "Expected {:?}, got {:?}",
                 right_paren, self.current_token
+            )))
+        }
+    }
+
+    fn check_token(&mut self, expected_token: Token) -> Result<(), ParseError> {
+        if expected_token == self.current_token {
+            self.get_next_token()?;
+            Ok(())
+        }
+        else {
+            Err(ParseError::InvalidOperator(format!(
+                "Expected {:?}, got {:?}",
+                expected_token, self.current_token
             )))
         }
     }
