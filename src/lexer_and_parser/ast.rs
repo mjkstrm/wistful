@@ -23,6 +23,16 @@ pub enum Node {
    
 }
 
+// Enum holding the evaluate_numerics values
+#[derive(Debug)]
+pub enum EvalResult {
+    Number(f64),
+    //Assignment {
+    //    identifier: Box<EvalResult>,
+    //    value: Box<EvalResult>
+    //}
+}
+
 // Check wheter current node is an binary node
 impl Node {
     pub fn is_binary_expr(&self) -> bool {
@@ -33,22 +43,31 @@ impl Node {
     }
 }
 
+pub fn evaluate(expr: Node) -> Result<EvalResult, Box<dyn error::Error>> {
+    match expr {
+        Node::NegativeNumberExpression(_) | Node::NumberExpression(_) => Ok(EvalResult::Number(evaluate_numerics(expr)?)),
+        Node::BinaryExpr{ .. } => Ok(EvalResult::Number(evaluate_numerics(expr)?)),
+        _ => Err("Couldnt evaluate".into())
+    }
+
+} 
+
 // Evaluating arithmetics
-pub fn eval(expr: Node) -> Result<f64, Box<dyn error::Error>> {
+fn evaluate_numerics(expr: Node) -> Result<f64, Box<dyn error::Error>> {
     use self::Node::*;
     match expr {
         NumberExpression(f) => Ok(f),
-        NegativeNumberExpression(f) => Ok(-eval(*f)?),
+        NegativeNumberExpression(f) => Ok(-evaluate_numerics(*f)?),
         BinaryExpr { l_expr, operator, r_expr } => {
             match operator {
-                Token::Add => Ok(eval(*l_expr)? + eval(*r_expr)?),
-                Token::Multiply => Ok(eval(*l_expr)? * eval(*r_expr)?),
-                Token::Divide => Ok(eval(*l_expr)? / eval(*r_expr)?),
-                Token::Pow => Ok(eval(*l_expr)?.powf(eval(*r_expr)?)),
+                Token::Add => Ok(evaluate_numerics(*l_expr)? + evaluate_numerics(*r_expr)?),
+                Token::Multiply => Ok(evaluate_numerics(*l_expr)? * evaluate_numerics(*r_expr)?),
+                Token::Divide => Ok(evaluate_numerics(*l_expr)? / evaluate_numerics(*r_expr)?),
+                Token::Pow => Ok(evaluate_numerics(*l_expr)?.powf(evaluate_numerics(*r_expr)?)),
                 // Fix this, bad implementation
                 _ => Err("Couldnt evaluate".into())
             }
-        },
-        _ => None
+        }
+        _ => Err("Not implemented.".into())
     }
 }

@@ -42,13 +42,11 @@ impl<'a> Parser<'a> {
 impl<'a> Parser<'a> {
     // Move on to the next token to be parsed.
     fn get_next_token(&mut self) -> Result<(), ParseError> {
-        println!("CURRENT: {:?}", self.current_token);
         let next_token = match self.tokenizer.next() {
             Some(token) => token,
             None => return Err(ParseError::InvalidOperator("Invalid character".into()))
         };
         if next_token == Token::Whitespace {
-            println!("Shouldnt be here..");
             self.get_next_token()?;
         }
         else {
