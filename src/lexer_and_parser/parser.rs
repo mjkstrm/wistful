@@ -6,9 +6,8 @@ use super::ast::Node;
 
 pub struct Parser<'a> {
     // input to be parsed
-    tokenizer: Tokenizer<'a>,
+    pub tokenizer: Tokenizer<'a>,
     current_token: Token,
-    pub nodes: Vec<Node>,
 }
 
 // Public methods
@@ -17,6 +16,7 @@ pub struct Parser<'a> {
 impl<'a> Parser<'a> {
     // Create a new instance of Parser
     pub fn new(expr: &'a str) -> Result<Self, ParseError> {
+        println!("{:p}", expr); // <- Prints out Y
         let mut lexer = Tokenizer::new(expr);
         let cur_token = match lexer.next() {
             Some(token) => token,
@@ -27,7 +27,6 @@ impl<'a> Parser<'a> {
         Ok(Parser {
             tokenizer: lexer,
             current_token: cur_token,
-            nodes: Vec::new(),
         })
     }
 

@@ -8,21 +8,16 @@ fn main() {
     let mut input = String::new();
     match io::stdin().read_line(&mut input) {
             Ok(_) => {
-                match get_values(input) {
+                match get_values(&input) {
                     Ok(_) => println!("Evaluating succeeded."),
                     Err(e) => println!("\x1b[0;31mParse error: {0}\x1b[0m", e)
                     }
                 }
             Err(error) => println!("error: {}", error),
     }
-    /*
-    match evaluate(input) {
-        Ok(val) => println!("> {:?}", val),
-        Err(e) => println!("\x1b[0;31mCould not evaluate input\x1b[0m"),
-    }*/
 }
 
-// For Debugging purposes, allow(dead_code) removes warnings from unused code.
+// For Debugging purposes, allow(dead_code) removes warnings from unused code. NOT UP TO DATE..
 #[allow(dead_code)]
 fn print_tree(node: ast::Node, mut indent: String) -> () {
     if indent.is_empty() {
@@ -52,12 +47,9 @@ fn print_tree(node: ast::Node, mut indent: String) -> () {
 }
 
 // Function to invoke Parser and evaluate expression
-fn get_values(expr: String) -> Result<(), ParseError> {
-    // Remove whitespace chars
-    //let expr = expr.split_whitespace().collect::<String>();
-    let mut math_parser = Parser::new(&expr)?;
-    let ast = math_parser.parse()?;
-    // Testing
+fn get_values(expr: &str) -> Result<(), ParseError> {
+    let mut parser = Parser::new(&expr)?;
+    let ast = parser.parse()?;
     let test = ast::evaluate(ast.clone())?;
     println!("{:?}", test);
     //

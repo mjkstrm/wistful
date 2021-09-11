@@ -27,10 +27,11 @@ pub enum Node {
 #[derive(Debug)]
 pub enum EvalResult {
     Number(f64),
-    //Assignment {
-    //    identifier: Box<EvalResult>,
-    //    value: Box<EvalResult>
-    //}
+    Literal(String),
+    Assignment {
+        identifier: Box<EvalResult>,
+        value: Box<EvalResult>
+    }
 }
 
 // Check wheter current node is an binary node
@@ -47,8 +48,12 @@ pub fn evaluate(expr: Node) -> Result<EvalResult, Box<dyn error::Error>> {
     match expr {
         Node::NegativeNumberExpression(_) | Node::NumberExpression(_) => Ok(EvalResult::Number(evaluate_numerics(expr)?)),
         Node::BinaryExpr{ .. } => Ok(EvalResult::Number(evaluate_numerics(expr)?)),
+        Node::AssignmentExpression { identifier, assignment_operator, expr } => {
+            Ok(evaluate_assignments(*identifier, assignment_operator, *expr)?)
+        },
         _ => Err("Couldnt evaluate".into())
     }
+
 
 } 
 
@@ -71,3 +76,17 @@ fn evaluate_numerics(expr: Node) -> Result<f64, Box<dyn error::Error>> {
         _ => Err("Not implemented.".into())
     }
 }
+
+fn evaluate_assignments(identifier: Node, assignment_operator: Token, expr: Node) -> Result<EvalResult, Box<dyn error::Error>> {
+   // Just experimental, so we'll assume that every assignment goes with '='
+   // Suppot for -= / += will be added later.
+   // Evaluate right hand expression
+   let value = evaluate(expr)?;
+   let identifier_str = match identifier {
+       Node::LiteralExpression(val) => EvalResult::Literal(val),
+       _ => return Err("couldnt evaluate".into())
+   };
+   Ok(EvalResult::Assignment { identifier: Box::new(identifier_str), value: Box::new(value) }) 
+
+}
+
