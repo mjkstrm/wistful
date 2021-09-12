@@ -16,7 +16,6 @@ pub struct Parser<'a> {
 impl<'a> Parser<'a> {
     // Create a new instance of Parser
     pub fn new(expr: &'a str) -> Result<Self, ParseError> {
-        println!("{:p}", expr); // <- Prints out Y
         let mut lexer = Tokenizer::new(expr);
         let cur_token = match lexer.next() {
             Some(token) => token,

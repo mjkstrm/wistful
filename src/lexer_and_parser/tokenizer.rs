@@ -25,7 +25,6 @@ pub struct Tokenizer<'a> {
 // Tokenizer<'a> uses the lifetime 'a
 impl<'a> Tokenizer<'a> {
     pub fn new(new_expr: &'a str) -> Self {
-        println!("{:p}", new_expr); // <- Prints out Y
         Tokenizer { expr: new_expr.chars().peekable(), }
     }
 }
