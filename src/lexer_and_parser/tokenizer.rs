@@ -2,7 +2,7 @@
 use std::iter::Peekable;
 use std::str::Chars;
 // Internal modules
-use super::token::Token;
+use super::token::{Token, Keyword};
 // Tokenizer
 /*
     Lifetime annotation <'a> makes sure,
@@ -41,7 +41,6 @@ impl<'a> Iterator for Tokenizer<'a> {
         let next_char = self.expr.next();
         // Match is basically the equilevant of switch.
         match next_char {
-            // Same as "case"
             // Check if char is a number
             Some('0'..='9') => {
                 let mut number = next_char?.to_string();
@@ -78,8 +77,32 @@ impl<'a> Iterator for Tokenizer<'a> {
                         characters.push(self.expr.next()?);
                     }
                 }
-                Some(Token::Literal(characters))
+                match characters.as_str() {
+                    "true" => return Some(Token::Literal { literal: characters, keyword: Keyword::True }),
+                    "false" => return Some(Token::Literal { literal: characters, keyword: Keyword::False }),
+                    // Rust retardness :D
+                    _ => return Some(Token::Identifier(characters))
+                };
             }
+            Some('"') => {
+                let mut characters = String::new();
+                while let Some(next_char) = self.expr.peek() {
+                    if next_char == &'"' {
+                        break;
+                    }
+                    else {
+                        characters.push(self.expr.next()?);
+                    }
+                }
+                /*
+                // Check for keywords
+                match characters.as_ref() {
+                    "true" => Some(Token::Keyword(characters, Keyword::True)),
+                    "false" => Some(Token::Keyword(characters, Keyword::False)),
+                    _ => Some(Token::Literal(characters)) 
+                };*/
+                Some(Token::Literal { literal: characters, keyword: Keyword::None })
+            },
             // Operators
             Some('+') => Some(Token::Add),
             Some('-') => Some(Token::Subtract),
@@ -93,7 +116,7 @@ impl<'a> Iterator for Tokenizer<'a> {
             // Whitespace
             //c if c?.is_whitespace() => Some(Token::Whitespace),
             Some(' ') => Some(Token::Whitespace),
-            // End of file
+            // EOF
             Some('\n') => Some(Token::EOF),
             None => Some(Token::EOF),
             Some(_) => None,

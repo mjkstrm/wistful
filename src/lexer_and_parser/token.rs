@@ -10,9 +10,17 @@ pub enum Token {
     LeftParenthese,
     RightParenthese,
     Num(f64),
-    Literal(String),
+    Literal { literal: String, keyword: Keyword },
+    Identifier(String),
     Whitespace,
     EOF
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub enum Keyword {
+    None,
+    True,
+    False
 }
 
 // Arithmetic precedences

@@ -1,7 +1,7 @@
 use std::fmt;
 // Internal uses
 use super::tokenizer::Tokenizer;
-use super::token::{Precedence, Token};
+use super::token::{Precedence, Token, Keyword};
 use super::ast::Node;
 
 pub struct Parser<'a> {
@@ -94,14 +94,22 @@ impl<'a> Parser<'a> {
 
                 Ok(l_expr)
             }
-            Token::Literal(string) => {
+            Token::Identifier(string) => {
                 self.get_next_token()?;
                 // Expecting an assignment after identifier
-                self.check_token(Token::Assignment)?;
-                let r_expr = self.generate_ast(Precedence::Default)?;
-                let literal_expr = Node::LiteralExpression(string); 
-                return Ok(Node::AssignmentExpression { identifier: Box::new(literal_expr), assignment_operator: Token::Assignment, expr: Box::new(r_expr) } )
+                if self.check_token(Token::Assignment)? {
+                    let r_expr = self.generate_ast(Precedence::Default)?;
+                    let id_expr = Node::IdentifierExpression(string); 
+                    return Ok(Node::AssignmentExpression { identifier: Box::new(id_expr), assignment_operator: Token::Assignment, expr: Box::new(r_expr) } )
+                }
+                else {
+                    return Ok(Node::IdentifierExpression(string))
+                }
             }
+            Token::Literal { literal, keyword } => {
+                self.get_next_token()?;
+                return Ok(Node::LiteralExpression(literal, keyword))
+            },
             _ => return Err(ParseError::InvalidOperator("Bad start".to_string()))
         }
     }
@@ -119,16 +127,13 @@ impl<'a> Parser<'a> {
         }
     }
 
-    fn check_token(&mut self, expected_token: Token) -> Result<(), ParseError> {
+    fn check_token(&mut self, expected_token: Token) -> Result<bool, ParseError> {
         if expected_token == self.current_token {
             self.get_next_token()?;
-            Ok(())
+            Ok(true)
         }
         else {
-            Err(ParseError::InvalidOperator(format!(
-                "Expected {:?}, got {:?}",
-                expected_token, self.current_token
-            )))
+            Ok(false)           
         }
     }
 

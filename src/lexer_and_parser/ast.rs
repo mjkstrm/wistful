@@ -1,12 +1,13 @@
 // Internal modules
-use super::token::Token;
+use super::token::{Token, Keyword};
 
 // Nodes for the syntax tree
 #[derive(Debug, PartialEq, Clone)]
 pub enum Node {
     NumberExpression(f64),
     NegativeNumberExpression(Box<Node>),
-    LiteralExpression(String),
+    LiteralExpression(String, Keyword),
+    IdentifierExpression(String),
     BinaryExpr {
         l_expr: Box<Node>,
         operator: Token,

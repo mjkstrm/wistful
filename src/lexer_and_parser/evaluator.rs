@@ -1,35 +1,38 @@
 // Libraries
 use std::error;
 use std::fmt;
+use std::collections::HashMap;
 // Internal modules
 use super::ast::Node;
-use super::token::Token;
+use super::token::{Token, Keyword};
 
 pub struct Evaluator {
-    ast: Node,
+    pub ast: Option<Node>,
     // Storing evaluated variables
-    pub variable_storage: Vec<Variable>
+    pub variable_storage: HashMap<String, VariableValue>
 }
-
-// Store variables in a global vector
+// TODO: Move to a separate file which contains helper classes/methods.
+// TODO: struct -> enum, different variants for different types. i.e string, float, int etc.
 #[derive(Debug)]
-pub struct Variable {
+pub enum VariableValue {
     // Fields set to public just for debugging purposes
-    pub name: String,
-    pub value: f64
+    Number(f64),
+    Literal(String),
+    Boolean(bool)
 }
 
-// Enum holding the evaluate_numerics values
+// Actual result of the expression evaluating.
 #[derive(Debug, Clone)]
 pub enum EvalResult {
     Number(f64),
     Literal(String),
+    Boolean(bool),
     Assignment {
         identifier: Box<EvalResult>,
         value: Box<EvalResult>
     }
 }
-
+// Display trait for EvalResult. Used to parse values for variable instantiating and debugging.
 impl fmt::Display for EvalResult {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
        write!(f, "{:?}", self) 
@@ -40,38 +43,57 @@ impl fmt::Display for EvalResult {
 
 // Public methods
 impl Evaluator {
-    pub fn new(expr: Node) -> Self {
-        Evaluator { ast: expr, variable_storage: Vec::new() }
-    }
+    // Instantiate a new evaluator object
+    /*
+        Given expression is taken as an Option. 
+        It grants us the same freedom as optional parameters in other languages gives.
 
+        Evaluator gets instantiated before actual parsing begins, so we're missing an actual AST at that point in time.
+        Variable storage will be eventually removed from evaluator.
+    */
+    pub fn new(expr: Option<Node>) -> Self {
+        Evaluator { ast: expr, variable_storage: HashMap::new() }
+    }
     // Start evaluating
     pub fn start_evaluating(&mut self) -> Result<(), Box<dyn error::Error>> {
-        let expr : Node = self.ast.clone();
+        let expr : Node = self.ast.clone().unwrap();
         match self.evaluate(expr) {
-            Ok(..) => Ok(()),
+            Ok(r) => { 
+                println!("{:?}", r);
+                Ok(())
+            },
             Err(e) => return Err(e.into()),
-        }  
+        }
+        
     }
 
+}
+
+// Private methods
+impl Evaluator {
+
     // Evaluate given node and return an EvalResult.
-    pub fn evaluate(&mut self, expr: Node) -> Result<EvalResult, Box<dyn error::Error>> {
+    fn evaluate(&mut self, expr: Node) -> Result<EvalResult, Box<dyn error::Error>> {
         match expr {
             Node::NegativeNumberExpression(_) | Node::NumberExpression(_) => Ok(EvalResult::Number(self.evaluate_numerics(expr)?)),
             Node::BinaryExpr{ .. } => Ok(EvalResult::Number(self.evaluate_numerics(expr)?)),
             Node::AssignmentExpression { identifier, assignment_operator, expr } => {
                 Ok(self.evaluate_assignments(*identifier, assignment_operator, *expr)?)
             },
+            Node::LiteralExpression(string, keyword) => {
+                // Handle keywords
+                match keyword {
+                    Keyword::True => return Ok(EvalResult::Boolean(true)),
+                    Keyword::False => return Ok(EvalResult::Boolean(false)),
+                    _ => return Ok(EvalResult::Literal(string)),
+                };
+            },
             // TODO: Handle variables
             _ => Err("Couldnt evaluate".into())
         }
+    }
 
-
-    } 
-}
-
-// Private methods
-impl Evaluator {
-    // Evaluating numeric values and arithmetics
+    // Handle numerics and binary expressions
     fn evaluate_numerics(&mut self, expr: Node) -> Result<f64, Box<dyn error::Error>> {
         use self::Node::*;
         match expr {
@@ -84,13 +106,20 @@ impl Evaluator {
                     Token::Divide => Ok(self.evaluate_numerics(*l_expr)? / self.evaluate_numerics(*r_expr)?),
                     Token::Pow => Ok(self.evaluate_numerics(*l_expr)?.powf(self.evaluate_numerics(*r_expr)?)),
                     // Fix this, bad implementation
-                    _ => Err("Couldnt evaluate".into())
+                    _ => Err("Could not evaluate Binary Expression".into())
+                }
+            }
+            LiteralExpression(s, _) => {
+                let value = self.variable_storage.get(&s);
+                match value {
+                    Some(VariableValue::Number(f)) => Ok(*f),
+                    _ => Err("Could not evaluate Literal Expression".into())
                 }
             }
             _ => Err("Not implemented.".into())
         }
     }
-
+    // Evaluate assignment expressions.
     fn evaluate_assignments(&mut self, identifier: Node, assignment_operator: Token, expr: Node) -> Result<EvalResult, Box<dyn error::Error>> {
        // Just experimental, so we'll assume that every assignment goes with '='
        // Suppot for -= / += will be added later.
@@ -100,22 +129,31 @@ impl Evaluator {
        let mut variable_name = String::new();
        // Set identifier
        let identifier_str = match identifier {
-           Node::LiteralExpression(val) => {
+           Node::IdentifierExpression(val) => {
+               println!("YAH");
                variable_name = val.clone();
                EvalResult::Literal(val)},
            _ => return Err("couldnt evaluate".into())
        };
        // Depending on the assigned values type, create a properly typed variable
-       // Numbers
-       if let EvalResult::Number(f) = value {
-            // TODO: If variable already exists, last value. Types can also be changed @ runtime
-            // Create a new variable
-            let new_variable = Variable {
-                name: variable_name,
-                value: f
-            };
-            self.variable_storage.push(new_variable);
+       match value.clone() {
+           // Floats
+           EvalResult::Number(f) => {
+               let new_var = VariableValue::Number(f);
+               self.variable_storage.insert(variable_name, new_var);
+           },
+           // Strings
+           EvalResult::Literal(string) => {
+               let new_var = VariableValue::Literal(string);
+               self.variable_storage.insert(variable_name, new_var);
+           },
+           EvalResult::Boolean(boolean) => {
+               let new_var = VariableValue::Boolean(boolean);
+               self.variable_storage.insert(variable_name, new_var);
+           }
+           _ => println!("Could not assign {0} to {1}", value, variable_name)
        }
+       
 
        Ok(EvalResult::Assignment { identifier: Box::new(identifier_str), value: Box::new(value) }) 
     }
