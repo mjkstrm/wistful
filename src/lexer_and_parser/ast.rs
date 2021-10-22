@@ -16,7 +16,7 @@ pub enum Node {
     AssignmentExpression {
         identifier: Box<Node>,
         assignment_operator: Token,
-        expr: Box<Node>
+        expr: Box<Node>,
     },
    
 }
