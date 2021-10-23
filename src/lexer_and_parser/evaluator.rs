@@ -89,6 +89,16 @@ impl Evaluator {
                 };
             },
             // TODO: Handle variables
+            Node::IdentifierExpression(identifier) => {
+                // Get value from storage
+                let value = self.variable_storage.get(&identifier);
+                match value {
+                    Some(VariableValue::Boolean(b)) => Ok(EvalResult::Boolean(*b)), 
+                    Some(VariableValue::Number(f)) => Ok(EvalResult::Number(*f)),
+                    Some(VariableValue::Literal(s)) => Ok(EvalResult::Literal(s.to_string())),
+                    None => Err("Could not find a variable with given identifier".into())
+                }
+            }
             _ => Err("Couldnt evaluate".into())
         }
     }
@@ -109,11 +119,11 @@ impl Evaluator {
                     _ => Err("Could not evaluate Binary Expression".into())
                 }
             }
-            LiteralExpression(s, _) => {
-                let value = self.variable_storage.get(&s);
+            IdentifierExpression(identifier) => {
+                let value = self.variable_storage.get(&identifier);
                 match value {
                     Some(VariableValue::Number(f)) => Ok(*f),
-                    _ => Err("Could not evaluate Literal Expression".into())
+                    _ => Err("Variable not found".into())
                 }
             }
             _ => Err("Not implemented.".into())
@@ -130,7 +140,6 @@ impl Evaluator {
        // Set identifier
        let identifier_str = match identifier {
            Node::IdentifierExpression(val) => {
-               println!("YAH");
                variable_name = val.clone();
                EvalResult::Literal(val)},
            _ => return Err("couldnt evaluate".into())
@@ -147,6 +156,7 @@ impl Evaluator {
                let new_var = VariableValue::Literal(string);
                self.variable_storage.insert(variable_name, new_var);
            },
+           // Booleans
            EvalResult::Boolean(boolean) => {
                let new_var = VariableValue::Boolean(boolean);
                self.variable_storage.insert(variable_name, new_var);

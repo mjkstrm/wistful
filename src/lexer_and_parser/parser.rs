@@ -99,6 +99,7 @@ impl<'a> Parser<'a> {
                 // Expecting an assignment after identifier
                 if self.check_token(Token::Assignment)? {
                     let r_expr = self.generate_ast(Precedence::Default)?;
+                    println!("{0:?}", r_expr);
                     let id_expr = Node::IdentifierExpression(string); 
                     return Ok(Node::AssignmentExpression { identifier: Box::new(id_expr), assignment_operator: Token::Assignment, expr: Box::new(r_expr) } )
                 }
