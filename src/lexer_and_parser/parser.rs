@@ -31,6 +31,9 @@ impl<'a> Parser<'a> {
 
     // Method in the public interface for parsing the expression
     pub fn parse(&mut self) -> Result<Node, ParseError> {
+        while self.current_token == Token::Whitespace {
+            self.get_next_token();
+        }
         let ast = self.generate_ast(Precedence::Default)?;
         Ok(ast)
     }
@@ -70,7 +73,11 @@ impl<'a> Parser<'a> {
 
     // Parse primary expressions, Numbers, Negative values, Parentheses etc.
     fn get_primary_expression(&mut self) -> Result<Node, ParseError> {
+        if self.current_token == Token::Whitespace {
+            self.get_next_token()?;
+        }
         let token = self.current_token.clone();
+        println!("{0:?}", token);
         match token {
             // Retarded way to implement a negative integer
             Token::Subtract => {
@@ -99,9 +106,14 @@ impl<'a> Parser<'a> {
                 // Expecting an assignment after identifier
                 if self.check_token(Token::Assignment)? {
                     let r_expr = self.generate_ast(Precedence::Default)?;
-                    println!("{0:?}", r_expr);
                     let id_expr = Node::IdentifierExpression(string); 
                     return Ok(Node::AssignmentExpression { identifier: Box::new(id_expr), assignment_operator: Token::Assignment, expr: Box::new(r_expr) } )
+                }
+                else if self.check_token(Token::Equals)? {
+                    let r_expr = self.generate_ast(Precedence::Default)?;
+                    let id_expr = Node::IdentifierExpression(string);
+                    //
+                    return Ok(Node::ConditionExpression { l_expr: Box::new(id_expr), operator: Token::Equals, r_expr: Box::new(r_expr) } )     
                 }
                 else {
                     return Ok(Node::IdentifierExpression(string))
@@ -109,6 +121,18 @@ impl<'a> Parser<'a> {
             }
             Token::Literal { literal, keyword } => {
                 self.get_next_token()?;
+                // If keyword == IF, expect ENDIF after 1 expression
+                if keyword == Keyword::IF {
+                    let if_statement = self.generate_ast(Precedence::Default)?;
+                    // DEBUG statement for IF
+                    //println!("--------------------");
+                    //println!("Parsed IF statement: ");
+                    //println!("{0:?}", if_statement);
+                    //println!("----------------------");
+                    let branch = self.generate_ast(Precedence::Default);
+                    println!("Then branch");
+                    println!("{0:?}", branch);
+                }
                 return Ok(Node::LiteralExpression(literal, keyword))
             },
             _ => return Err(ParseError::InvalidOperator("Bad start".to_string()))

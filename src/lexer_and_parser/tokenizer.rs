@@ -80,6 +80,7 @@ impl<'a> Iterator for Tokenizer<'a> {
                 match characters.as_str() {
                     "true" => return Some(Token::Literal { literal: characters, keyword: Keyword::True }),
                     "false" => return Some(Token::Literal { literal: characters, keyword: Keyword::False }),
+                    "if" => return Some(Token::Literal { literal: characters, keyword: Keyword::IF}),
                     // Rust retardness :D
                     _ => return Some(Token::Identifier(characters))
                 };
@@ -109,7 +110,15 @@ impl<'a> Iterator for Tokenizer<'a> {
             Some('*') => Some(Token::Multiply),
             Some('/') => Some(Token::Divide),
             Some('^') => Some(Token::Pow),
-            Some('=') => Some(Token::Assignment),
+            Some('=') => {
+                if self.expr.peek() == Some(&'=') {
+                    self.expr.next()?;
+                    Some(Token::Equals)
+                }
+                else {
+                    Some(Token::Assignment)
+                }
+            },
             // Parentheses
             Some('(') => Some(Token::LeftParenthese),
             Some(')') => Some(Token::RightParenthese),
@@ -117,8 +126,13 @@ impl<'a> Iterator for Tokenizer<'a> {
             //c if c?.is_whitespace() => Some(Token::Whitespace),
             Some(' ') => Some(Token::Whitespace),
             // EOF
-            Some('\n') => Some(Token::EOF),
-            None => Some(Token::EOF),
+            Some('\n') => Some(Token::Whitespace),
+            Some('\r') => Some(Token::Whitespace),
+            // Tab
+            Some('\t') => Some(Token::Whitespace),
+            // Null
+            Some('\0') => Some(Token::Whitespace),
+            None => None,
             Some(_) => None,
         }
     }

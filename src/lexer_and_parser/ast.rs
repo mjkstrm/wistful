@@ -18,7 +18,16 @@ pub enum Node {
         assignment_operator: Token,
         expr: Box<Node>,
     },
-   
+    ConditionExpression {
+        l_expr: Box<Node>,
+        operator: Token,
+        r_expr: Box<Node>
+    },
+    IfExpression {
+        statement: Box<Node>,
+        then_branch: Box<Node>,
+        // TODO Else branch
+    }   
 }
 
 

@@ -4,6 +4,7 @@ pub enum Token {
     Assignment,
     Add,
     Subtract,
+    Equals,
     Multiply,
     Divide,
     Pow,
@@ -20,7 +21,9 @@ pub enum Token {
 pub enum Keyword {
     None,
     True,
-    False
+    False,
+    IF,
+    ENDIF
 }
 
 // Arithmetic precedences

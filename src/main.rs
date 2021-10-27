@@ -23,6 +23,7 @@ fn main() {
 
 // Function to invoke Parser and evaluate expression
 fn get_values(expr: &str, evaluator: &mut Evaluator) -> Result<(), ParseError> {
+    let trimmed_expr = expr.trim();
     let ast = Parser::new(&expr)?.parse()?;
     // Assign evaluators ast now that we've parsed one.
     evaluator.ast = Some(ast);
