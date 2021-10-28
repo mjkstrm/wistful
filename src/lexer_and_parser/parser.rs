@@ -130,10 +130,9 @@ impl<'a> Parser<'a> {
                     // TODO:
                     // Generate statements for the branch until ENDIF is reached, so we can have
                     // unlimited amount of expressions in the branch
-                    let mut expression = self.generate_ast(Precedence::Default)?;
                     let mut expressions = Vec::new();
-                    while let branch = expression.clone() {
-                        println!("{0:?}", branch);
+                    while let branch = self.generate_ast(Precedence::Default)? {
+                        //println!("{0:?}", branch);
                         match branch {
                             Node::LiteralExpression(_, key) => {
                                 if key == Keyword::ENDIF {
@@ -141,8 +140,8 @@ impl<'a> Parser<'a> {
                                 }
                             },
                             _ => { 
-                                expression = self.generate_ast(Precedence::Default)?;
-                                expressions.push(expression.clone()); }
+                                expressions.push(branch); 
+                            }
                         }            
                     }
                     
