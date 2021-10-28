@@ -25,9 +25,11 @@ pub enum Node {
     },
     IfExpression {
         statement: Box<Node>,
-        then_branch: Box<Node>,
+        // This should prolly be, lets see.. Box<Vec<Node>>
+        then_branch: Box<Vec<Node>>,
         // TODO Else branch
-    }   
+    },
+    EOF(String)
 }
 
 

@@ -30,12 +30,16 @@ impl<'a> Parser<'a> {
     }
 
     // Method in the public interface for parsing the expression
-    pub fn parse(&mut self) -> Result<Node, ParseError> {
+    pub fn parse(&mut self) -> Result<Vec<Node>, ParseError> {
         while self.current_token == Token::Whitespace {
             self.get_next_token();
         }
-        let ast = self.generate_ast(Precedence::Default)?;
-        Ok(ast)
+        let mut nodes = Vec::new();
+        while self.current_token != Token::EOF {
+            let ast = self.generate_ast(Precedence::Default)?;
+            nodes.push(ast);
+        }
+        Ok(nodes)
     }
 }
 
@@ -57,6 +61,9 @@ impl<'a> Parser<'a> {
     }
 
     fn generate_ast(&mut self, precedence: Precedence) -> Result<Node, ParseError> {
+        if self.current_token == Token::EOF {
+            return Ok(Node::EOF("EOF".to_string()))
+        }
         let mut l_expr = self.get_primary_expression()?;
         
         // Start creating the tree recursively
@@ -73,11 +80,7 @@ impl<'a> Parser<'a> {
 
     // Parse primary expressions, Numbers, Negative values, Parentheses etc.
     fn get_primary_expression(&mut self) -> Result<Node, ParseError> {
-        if self.current_token == Token::Whitespace {
-            self.get_next_token()?;
-        }
         let token = self.current_token.clone();
-        println!("{0:?}", token);
         match token {
             // Retarded way to implement a negative integer
             Token::Subtract => {
@@ -124,15 +127,28 @@ impl<'a> Parser<'a> {
                 // If keyword == IF, expect ENDIF after 1 expression
                 if keyword == Keyword::IF {
                     let if_statement = self.generate_ast(Precedence::Default)?;
-                    // DEBUG statement for IF
-                    //println!("--------------------");
-                    //println!("Parsed IF statement: ");
-                    //println!("{0:?}", if_statement);
-                    //println!("----------------------");
-                    let branch = self.generate_ast(Precedence::Default);
-                    println!("Then branch");
-                    println!("{0:?}", branch);
+                    // TODO:
+                    // Generate statements for the branch until ENDIF is reached, so we can have
+                    // unlimited amount of expressions in the branch
+                    let mut expression = self.generate_ast(Precedence::Default)?;
+                    let mut expressions = Vec::new();
+                    while let branch = expression.clone() {
+                        println!("{0:?}", branch);
+                        match branch {
+                            Node::LiteralExpression(_, key) => {
+                                if key == Keyword::ENDIF {
+                                    break;
+                                }
+                            },
+                            _ => { 
+                                expression = self.generate_ast(Precedence::Default)?;
+                                expressions.push(expression.clone()); }
+                        }            
+                    }
+                    
+                    return Ok(Node::IfExpression { statement: Box::new(if_statement), then_branch: Box::new(expressions) })
                 }
+            
                 return Ok(Node::LiteralExpression(literal, keyword))
             },
             _ => return Err(ParseError::InvalidOperator("Bad start".to_string()))

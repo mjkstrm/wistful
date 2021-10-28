@@ -8,7 +8,9 @@ use super::token::{Token, Keyword};
     Lifetime annotation <'a> makes sure,
     that the field "expr" will outlive the borrower.
 
-    Any input which is borrowed (expression in this case), must outlive the borrower!
+    in a nutshell: You can only keep using tokenizer aslong as the input (expr) is valid.
+
+    Any input which is borrowed (expression in this case), must outlive (or live as long as) the borrower!
 */
 pub struct Tokenizer<'a> {
     // Given expression
@@ -81,6 +83,7 @@ impl<'a> Iterator for Tokenizer<'a> {
                     "true" => return Some(Token::Literal { literal: characters, keyword: Keyword::True }),
                     "false" => return Some(Token::Literal { literal: characters, keyword: Keyword::False }),
                     "if" => return Some(Token::Literal { literal: characters, keyword: Keyword::IF}),
+                    "endif" => return Some(Token::Literal { literal: characters, keyword: Keyword::ENDIF}),
                     // Rust retardness :D
                     _ => return Some(Token::Identifier(characters))
                 };
@@ -131,8 +134,8 @@ impl<'a> Iterator for Tokenizer<'a> {
             // Tab
             Some('\t') => Some(Token::Whitespace),
             // Null
-            Some('\0') => Some(Token::Whitespace),
-            None => None,
+            Some('\0') => Some(Token::EOF),
+            None => Some(Token::EOF),
             Some(_) => None,
         }
     }
