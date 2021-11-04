@@ -2,7 +2,7 @@
 use std::iter::Peekable;
 use std::str::Chars;
 // Internal modules
-use super::token::{Token, Keyword};
+use super::token::{Keyword, Token};
 // Tokenizer
 /*
     Lifetime annotation <'a> makes sure,
@@ -19,7 +19,7 @@ pub struct Tokenizer<'a> {
         .next() returns the next character in the given input, and consumes it.
         .peek() return the next character in the give input without consuming it.
     */
-    pub expr: Peekable<Chars<'a>>
+    pub expr: Peekable<Chars<'a>>,
 }
 
 // Implementation of constructing a new instance of Tokenizer
@@ -27,7 +27,9 @@ pub struct Tokenizer<'a> {
 // Tokenizer<'a> uses the lifetime 'a
 impl<'a> Tokenizer<'a> {
     pub fn new(new_expr: &'a str) -> Self {
-        Tokenizer { expr: new_expr.chars().peekable(), }
+        Tokenizer {
+            expr: new_expr.chars().peekable(),
+        }
     }
 }
 
@@ -59,33 +61,62 @@ impl<'a> Iterator for Tokenizer<'a> {
                 while let Some(next_char) = self.expr.peek() {
                     if next_char.is_numeric() || next_char == &'.' {
                         number.push(self.expr.next()?);
-                    }
-                    else if next_char == &'(' {
+                    } else if next_char == &'(' {
                         return None;
-                    }
-                    else {
+                    } else {
                         break;
                     }
                 }
                 Some(Token::Num(number.parse::<f64>().unwrap()))
-            },
+            }
             Some('a'..='z') => {
                 let mut characters = next_char?.to_string();
                 while let Some(next_char) = self.expr.peek() {
                     if next_char.is_whitespace() {
                         break;
-                    }
-                    else {
+                    } else {
                         characters.push(self.expr.next()?);
                     }
                 }
                 match characters.as_str() {
-                    "true" => return Some(Token::Literal { literal: characters, keyword: Keyword::True }),
-                    "false" => return Some(Token::Literal { literal: characters, keyword: Keyword::False }),
-                    "if" => return Some(Token::Literal { literal: characters, keyword: Keyword::IF}),
-                    "endif" => return Some(Token::Literal { literal: characters, keyword: Keyword::ENDIF}),
+                    "true" => {
+                        return Some(Token::Literal {
+                            literal: characters,
+                            keyword: Keyword::True,
+                        })
+                    }
+                    "false" => {
+                        return Some(Token::Literal {
+                            literal: characters,
+                            keyword: Keyword::False,
+                        })
+                    }
+                    "if" => {
+                        return Some(Token::Literal {
+                            literal: characters,
+                            keyword: Keyword::IF,
+                        })
+                    }
+                    "endif" => {
+                        return Some(Token::Literal {
+                            literal: characters,
+                            keyword: Keyword::ENDIF,
+                        })
+                    }
+                    "else" => {
+                        return Some(Token::Literal {
+                            literal: characters,
+                            keyword: Keyword::ELSE,
+                        })
+                    }
+                    "elif" => {
+                        return Some(Token::Literal {
+                            literal: characters,
+                            keyword: Keyword::ELIF,
+                        })
+                    }
                     // Rust retardness :D
-                    _ => return Some(Token::Identifier(characters))
+                    _ => return Some(Token::Identifier(characters)),
                 };
             }
             Some('"') => {
@@ -93,8 +124,7 @@ impl<'a> Iterator for Tokenizer<'a> {
                 while let Some(next_char) = self.expr.peek() {
                     if next_char == &'"' {
                         break;
-                    }
-                    else {
+                    } else {
                         characters.push(self.expr.next()?);
                     }
                 }
@@ -103,10 +133,13 @@ impl<'a> Iterator for Tokenizer<'a> {
                 match characters.as_ref() {
                     "true" => Some(Token::Keyword(characters, Keyword::True)),
                     "false" => Some(Token::Keyword(characters, Keyword::False)),
-                    _ => Some(Token::Literal(characters)) 
+                    _ => Some(Token::Literal(characters))
                 };*/
-                Some(Token::Literal { literal: characters, keyword: Keyword::None })
-            },
+                Some(Token::Literal {
+                    literal: characters,
+                    keyword: Keyword::None,
+                })
+            }
             // Operators
             Some('+') => Some(Token::Add),
             Some('-') => Some(Token::Subtract),
@@ -117,11 +150,10 @@ impl<'a> Iterator for Tokenizer<'a> {
                 if self.expr.peek() == Some(&'=') {
                     self.expr.next()?;
                     Some(Token::Equals)
-                }
-                else {
+                } else {
                     Some(Token::Assignment)
                 }
-            },
+            }
             // Parentheses
             Some('(') => Some(Token::LeftParenthese),
             Some(')') => Some(Token::RightParenthese),

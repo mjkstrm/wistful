@@ -1,8 +1,8 @@
 use std::fmt;
 // Internal uses
-use super::tokenizer::Tokenizer;
-use super::token::{Precedence, Token, Keyword};
 use super::ast::Node;
+use super::token::{Keyword, Precedence, Token};
+use super::tokenizer::Tokenizer;
 
 pub struct Parser<'a> {
     // input to be parsed
@@ -19,9 +19,7 @@ impl<'a> Parser<'a> {
         let mut lexer = Tokenizer::new(expr);
         let cur_token = match lexer.next() {
             Some(token) => token,
-            None => { 
-                return Err(ParseError::InvalidOperator("Invalid character".into())) 
-            },
+            None => return Err(ParseError::InvalidOperator("Invalid character".into())),
         };
         Ok(Parser {
             tokenizer: lexer,
@@ -49,12 +47,11 @@ impl<'a> Parser<'a> {
     fn get_next_token(&mut self) -> Result<(), ParseError> {
         let next_token = match self.tokenizer.next() {
             Some(token) => token,
-            None => return Err(ParseError::InvalidOperator("Invalid character".into()))
+            None => return Err(ParseError::InvalidOperator("Invalid character".into())),
         };
         if next_token == Token::Whitespace {
             self.get_next_token()?;
-        }
-        else {
+        } else {
             self.current_token = next_token;
         }
         Ok(())
@@ -62,17 +59,17 @@ impl<'a> Parser<'a> {
 
     fn generate_ast(&mut self, precedence: Precedence) -> Result<Node, ParseError> {
         if self.current_token == Token::EOF {
-            return Ok(Node::EOF("EOF".to_string()))
+            return Ok(Node::EOF("EOF".to_string()));
         }
         let mut l_expr = self.get_primary_expression()?;
-        
+
         // Start creating the tree recursively
         while precedence < self.current_token.get_precedence() {
             if self.current_token == Token::EOF {
                 break;
             }
-            
-            let r_expr = self.parse_binary_expression(l_expr)?; 
+
+            let r_expr = self.parse_binary_expression(l_expr)?;
             l_expr = r_expr;
         }
         Ok(l_expr)
@@ -99,7 +96,11 @@ impl<'a> Parser<'a> {
 
                 if self.current_token == Token::LeftParenthese {
                     let r_expr = self.generate_ast(Precedence::MultiplyAndDivide)?;
-                    return Ok(Node::BinaryExpr { l_expr: Box::new(l_expr), operator: Token::Multiply, r_expr: Box::new(r_expr) })
+                    return Ok(Node::BinaryExpr {
+                        l_expr: Box::new(l_expr),
+                        operator: Token::Multiply,
+                        r_expr: Box::new(r_expr),
+                    });
                 }
 
                 Ok(l_expr)
@@ -109,48 +110,116 @@ impl<'a> Parser<'a> {
                 // Expecting an assignment after identifier
                 if self.check_token(Token::Assignment)? {
                     let r_expr = self.generate_ast(Precedence::Default)?;
-                    let id_expr = Node::IdentifierExpression(string); 
-                    return Ok(Node::AssignmentExpression { identifier: Box::new(id_expr), assignment_operator: Token::Assignment, expr: Box::new(r_expr) } )
-                }
-                else if self.check_token(Token::Equals)? {
+                    let id_expr = Node::IdentifierExpression(string);
+                    return Ok(Node::AssignmentExpression {
+                        identifier: Box::new(id_expr),
+                        assignment_operator: Token::Assignment,
+                        expr: Box::new(r_expr),
+                    });
+                } else if self.check_token(Token::Equals)? {
                     let r_expr = self.generate_ast(Precedence::Default)?;
                     let id_expr = Node::IdentifierExpression(string);
                     //
-                    return Ok(Node::ConditionExpression { l_expr: Box::new(id_expr), operator: Token::Equals, r_expr: Box::new(r_expr) } )     
-                }
-                else {
-                    return Ok(Node::IdentifierExpression(string))
+                    return Ok(Node::ConditionExpression {
+                        l_expr: Box::new(id_expr),
+                        operator: Token::Equals,
+                        r_expr: Box::new(r_expr),
+                    });
+                } else {
+                    return Ok(Node::IdentifierExpression(string));
                 }
             }
             Token::Literal { literal, keyword } => {
                 self.get_next_token()?;
-                // If keyword == IF, expect ENDIF after 1 expression
+                // If clause, TODO: Comment this shit out properly
                 if keyword == Keyword::IF {
-                    let if_statement = self.generate_ast(Precedence::Default)?;
-                    // TODO:
-                    // Generate statements for the branch until ENDIF is reached, so we can have
+                    let condition = Some(self.generate_ast(Precedence::Default)?);
+                    // Generate statements for the branch until ENDIF or ELSE is reached, so we can have
                     // unlimited amount of expressions in the branch
-                    let mut expressions = Vec::new();
-                    while let branch = self.generate_ast(Precedence::Default)? {
-                        //println!("{0:?}", branch);
-                        match branch {
+                    let mut else_branch = None;
+                    //let mut else_branch_tmp = Vec::new(); // Retarded way to avoid moving values, since Copy trait cannot be applied to Option<Vec<..>>
+                    let mut then_branch = Vec::new();
+                    while let branch_for_then = self.generate_ast(Precedence::Default)? {
+                        match branch_for_then {
+                            Node::EOF(_) => {
+                                break;
+                            }
                             Node::LiteralExpression(_, key) => {
                                 if key == Keyword::ENDIF {
                                     break;
                                 }
-                            },
-                            _ => { 
-                                expressions.push(branch); 
                             }
-                        }            
+                            Node::ElseExpression {
+                                condition: _,
+                                then_branch: _,
+                                else_branch: _,
+                            } => {
+                                //else_branch_tmp.push(branch_for_then);
+                                else_branch = Some(branch_for_then);
+                            }
+                            _ => {
+                                then_branch.push(branch_for_then);
+                            }
+                        }
                     }
-                    
-                    return Ok(Node::IfExpression { statement: Box::new(if_statement), then_branch: Box::new(expressions) })
+
+                    /*if else_branch_tmp.len() > 0 {
+                        else_branch = Some(else_branch_tmp);
+                    }*/
+
+                    return Ok(Node::IfExpression {
+                        condition: Box::new(condition),
+                        then_branch: Box::new(then_branch),
+                        else_branch: Box::new(else_branch),
+                    });
                 }
-            
-                return Ok(Node::LiteralExpression(literal, keyword))
-            },
-            _ => return Err(ParseError::InvalidOperator("Bad start".to_string()))
+                if keyword == Keyword::ELSE || keyword == Keyword::ELIF {
+                    let mut condition: Option<Node> = None;
+                    // Whether we have a condition to evaluate or not.
+                    if keyword == Keyword::ELIF {
+                        condition = Some(self.generate_ast(Precedence::Default)?);
+                    }
+                    // Generate a statement
+                    let mut else_branch = None;
+                    //let mut else_branch_tmp = Vec::new(); // Retarded way to avoid moving values, since Copy trait cannot be applied to Option<Vec<..>>
+                    let mut then_branch = Vec::new();
+                    while let branch_for_then = self.generate_ast(Precedence::Default)? {
+                        match branch_for_then {
+                            Node::EOF(_) => {
+                                break;
+                            }
+                            Node::LiteralExpression(_, key) => {
+                                if key == Keyword::ENDIF {
+                                    break;
+                                }
+                            }
+                            Node::ElseExpression {
+                                condition: _,
+                                then_branch: _,
+                                else_branch: _,
+                            } => {
+                                //else_branch_tmp.push(branch_for_then);
+                                else_branch = Some(branch_for_then);
+                            }
+                            _ => {
+                                then_branch.push(branch_for_then);
+                            }
+                        }
+                    }
+                    /*
+                    if else_branch_tmp.len() > 0 {
+                        else_branch = Some(else_branch_tmp);
+                    }*/
+                    return Ok(Node::ElseExpression {
+                        condition: Box::new(condition),
+                        then_branch: Box::new(then_branch),
+                        else_branch: Box::new(else_branch),
+                    });
+                }
+
+                return Ok(Node::LiteralExpression(literal, keyword));
+            }
+            _ => return Err(ParseError::InvalidOperator("Bad start".to_string())),
         }
     }
 
@@ -171,9 +240,8 @@ impl<'a> Parser<'a> {
         if expected_token == self.current_token {
             self.get_next_token()?;
             Ok(true)
-        }
-        else {
-            Ok(false)           
+        } else {
+            Ok(false)
         }
     }
 
@@ -184,25 +252,41 @@ impl<'a> Parser<'a> {
             Token::Add => {
                 let _capture = self.get_next_token();
                 let r_expr = self.generate_ast(Precedence::AddAndSubtract)?;
-                
-                Ok(Node::BinaryExpr { l_expr: Box::new(l_expr), operator: Token::Add, r_expr: Box::new(r_expr) })
+
+                Ok(Node::BinaryExpr {
+                    l_expr: Box::new(l_expr),
+                    operator: Token::Add,
+                    r_expr: Box::new(r_expr),
+                })
             }
             Token::Multiply => {
                 let _capture = self.get_next_token();
                 let r_expr = self.generate_ast(Precedence::MultiplyAndDivide)?;
-                Ok(Node::BinaryExpr { l_expr: Box::new(l_expr), operator: Token::Multiply, r_expr: Box::new(r_expr) })
-            },
+                Ok(Node::BinaryExpr {
+                    l_expr: Box::new(l_expr),
+                    operator: Token::Multiply,
+                    r_expr: Box::new(r_expr),
+                })
+            }
             Token::Divide => {
                 let _capture = self.get_next_token();
                 let r_expr = self.generate_ast(Precedence::MultiplyAndDivide)?;
-                Ok(Node::BinaryExpr { l_expr: Box::new(l_expr), operator: Token::Divide, r_expr: Box::new(r_expr) })
+                Ok(Node::BinaryExpr {
+                    l_expr: Box::new(l_expr),
+                    operator: Token::Divide,
+                    r_expr: Box::new(r_expr),
+                })
             }
             Token::Pow => {
                 let _capture = self.get_next_token();
                 let r_expr = self.generate_ast(Precedence::Power)?;
-                Ok(Node::BinaryExpr { l_expr: Box::new(l_expr), operator: Token::Pow, r_expr: Box::new(r_expr) })
+                Ok(Node::BinaryExpr {
+                    l_expr: Box::new(l_expr),
+                    operator: Token::Pow,
+                    r_expr: Box::new(r_expr),
+                })
             }
-            _ => return Err(ParseError::InvalidOperator("Bad token".to_string()))
+            _ => return Err(ParseError::InvalidOperator("Bad token".to_string())),
         }
     }
 }
@@ -216,7 +300,7 @@ impl std::convert::From<std::boxed::Box<dyn std::error::Error>> for ParseError {
 #[derive(Debug)]
 pub enum ParseError {
     InvalidOperator(String),
-    UnableToParse(String)
+    UnableToParse(String),
 }
 
 impl fmt::Display for ParseError {
@@ -227,5 +311,3 @@ impl fmt::Display for ParseError {
         }
     }
 }
-
-

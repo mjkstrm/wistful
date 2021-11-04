@@ -1,4 +1,3 @@
-
 #[derive(Debug, Clone, PartialEq)]
 pub enum Token {
     Assignment,
@@ -14,7 +13,7 @@ pub enum Token {
     Literal { literal: String, keyword: Keyword },
     Identifier(String),
     Whitespace,
-    EOF
+    EOF,
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -23,7 +22,9 @@ pub enum Keyword {
     True,
     False,
     IF,
-    ENDIF
+    ENDIF,
+    ELSE,
+    ELIF,
 }
 
 // Arithmetic precedences
@@ -33,9 +34,8 @@ pub enum Precedence {
     AddAndSubtract,
     MultiplyAndDivide,
     Power,
-    NegativeValue
+    NegativeValue,
 }
-
 
 // Function to get operator precedence
 impl Token {
@@ -47,8 +47,7 @@ impl Token {
             Add | Subtract => AddAndSubtract,
             Multiply | Divide => MultiplyAndDivide,
             Pow => Power,
-            _ => Default
+            _ => Default,
         }
     }
 }
-
