@@ -68,7 +68,6 @@ impl<'a> Parser<'a> {
             if self.current_token == Token::EOF {
                 break;
             }
-
             let r_expr = self.parse_binary_expression(l_expr)?;
             l_expr = r_expr;
         }
@@ -134,16 +133,12 @@ impl<'a> Parser<'a> {
                 // If clause, TODO: Comment this shit out properly
                 if keyword == Keyword::IF {
                     let condition = Some(self.generate_ast(Precedence::Default)?);
-                    // Generate statements for the branch until ENDIF or ELSE is reached, so we can have
-                    // unlimited amount of expressions in the branch
+                    // Generate nodes for the branch until ENDIF or ELSE is reached
                     let mut else_branch = None;
-                    //let mut else_branch_tmp = Vec::new(); // Retarded way to avoid moving values, since Copy trait cannot be applied to Option<Vec<..>>
                     let mut then_branch = Vec::new();
                     while let branch_for_then = self.generate_ast(Precedence::Default)? {
                         match branch_for_then {
-                            Node::EOF(_) => {
-                                break;
-                            }
+                            // If ENDIF or Else expression is matched here, stop iterating
                             Node::LiteralExpression(_, key) => {
                                 if key == Keyword::ENDIF {
                                     break;
@@ -154,25 +149,22 @@ impl<'a> Parser<'a> {
                                 then_branch: _,
                                 else_branch: _,
                             } => {
-                                //else_branch_tmp.push(branch_for_then);
                                 else_branch = Some(branch_for_then);
+                                break;
                             }
                             _ => {
                                 then_branch.push(branch_for_then);
                             }
                         }
                     }
-
-                    /*if else_branch_tmp.len() > 0 {
-                        else_branch = Some(else_branch_tmp);
-                    }*/
-
+            
                     return Ok(Node::IfExpression {
                         condition: Box::new(condition),
                         then_branch: Box::new(then_branch),
                         else_branch: Box::new(else_branch),
                     });
                 }
+                // Parse ELSE and ELIF branches
                 if keyword == Keyword::ELSE || keyword == Keyword::ELIF {
                     let mut condition: Option<Node> = None;
                     // Whether we have a condition to evaluate or not.
@@ -181,13 +173,10 @@ impl<'a> Parser<'a> {
                     }
                     // Generate a statement
                     let mut else_branch = None;
-                    //let mut else_branch_tmp = Vec::new(); // Retarded way to avoid moving values, since Copy trait cannot be applied to Option<Vec<..>>
                     let mut then_branch = Vec::new();
                     while let branch_for_then = self.generate_ast(Precedence::Default)? {
-                        match branch_for_then {
-                            Node::EOF(_) => {
-                                break;
-                            }
+                        match branch_for_then { 
+                            // If ENDIF or ELSE expression is matched here, stop iterating.
                             Node::LiteralExpression(_, key) => {
                                 if key == Keyword::ENDIF {
                                     break;
@@ -198,25 +187,20 @@ impl<'a> Parser<'a> {
                                 then_branch: _,
                                 else_branch: _,
                             } => {
-                                //else_branch_tmp.push(branch_for_then);
                                 else_branch = Some(branch_for_then);
+                                break;
                             }
                             _ => {
                                 then_branch.push(branch_for_then);
                             }
                         }
                     }
-                    /*
-                    if else_branch_tmp.len() > 0 {
-                        else_branch = Some(else_branch_tmp);
-                    }*/
                     return Ok(Node::ElseExpression {
                         condition: Box::new(condition),
                         then_branch: Box::new(then_branch),
                         else_branch: Box::new(else_branch),
                     });
                 }
-
                 return Ok(Node::LiteralExpression(literal, keyword));
             }
             _ => return Err(ParseError::InvalidOperator("Bad start".to_string())),
@@ -252,7 +236,6 @@ impl<'a> Parser<'a> {
             Token::Add => {
                 let _capture = self.get_next_token();
                 let r_expr = self.generate_ast(Precedence::AddAndSubtract)?;
-
                 Ok(Node::BinaryExpr {
                     l_expr: Box::new(l_expr),
                     operator: Token::Add,

@@ -61,7 +61,7 @@ impl Evaluator {
         let expr: Node = self.ast.clone().unwrap();
         match self.evaluate(expr) {
             Ok(r) => {
-                println!("{:?}", r);
+                println!("EVALUATOR: {:?}", r);
                 Ok(())
             }
             Err(e) => return Err(e.into()),
@@ -237,7 +237,7 @@ impl Evaluator {
                                 self.evaluate_if_expression(*condition, *then_branch, *else_branch);
                             }
                         }
-                        None => {}
+                        None => { /* Nothing to do if branch was not found */ }
                     }
                 }
             }
@@ -249,10 +249,9 @@ impl Evaluator {
                 }
             }
             _ => {
-                println!("False")
+               // Nothing to do 
             }
         }
-
         Ok(EvalResult::EmptyResult)
     }
     /*
