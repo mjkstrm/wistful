@@ -131,19 +131,22 @@ impl<'a> Parser<'a> {
             Token::Literal { literal, keyword } => {
                 self.get_next_token()?;
                 // If clause, TODO: Comment this shit out properly
-                if keyword == Keyword::IF {
+                if keyword == Keyword::IF { 
                     let condition = Some(self.generate_ast(Precedence::Default)?);
+                    if !self.check_token(Token::LeftBrace)? {
+                        return Err(ParseError::UnableToParse(format!("Missing opening brace for {0:?}", condition))) 
+                    }
                     // Generate nodes for the branch until ENDIF or ELSE is reached
                     let mut else_branch = None;
                     let mut then_branch = Vec::new();
+                    let mut check_for_else = false;
                     while let branch_for_then = self.generate_ast(Precedence::Default)? {
-                        match branch_for_then {
-                            // If ENDIF or Else expression is matched here, stop iterating
-                            Node::LiteralExpression(_, key) => {
-                                if key == Keyword::ENDIF {
-                                    break;
-                                }
-                            }
+                        // If closing brace is found, stop iterating.
+                        if self.check_token(Token::RightBrace)? {
+                            check_for_else = true;
+                            break;
+                        }
+                        match branch_for_then { 
                             Node::ElseExpression {
                                 condition: _,
                                 then_branch: _,
@@ -153,11 +156,15 @@ impl<'a> Parser<'a> {
                                 break;
                             }
                             _ => {
-                                then_branch.push(branch_for_then);
+                                if !check_for_else {
+                                    then_branch.push(branch_for_then);
+                                }
+                                else {
+                                    break;
+                                }
                             }
                         }
                     }
-            
                     return Ok(Node::IfExpression {
                         condition: Box::new(condition),
                         then_branch: Box::new(then_branch),
@@ -171,17 +178,20 @@ impl<'a> Parser<'a> {
                     if keyword == Keyword::ELIF {
                         condition = Some(self.generate_ast(Precedence::Default)?);
                     }
+                    if !self.check_token(Token::LeftBrace)? {
+                        return Err(ParseError::UnableToParse(format!("Missing opening brace for {0:?}", condition))) 
+                    }
                     // Generate a statement
                     let mut else_branch = None;
                     let mut then_branch = Vec::new();
+                    let mut check_for_else = false;
                     while let branch_for_then = self.generate_ast(Precedence::Default)? {
+                        // If closing brace is found, stop iterating.
+                        if self.check_token(Token::RightBrace)? {
+                            check_for_else = true;
+                            break; 
+                        }
                         match branch_for_then { 
-                            // If ENDIF or ELSE expression is matched here, stop iterating.
-                            Node::LiteralExpression(_, key) => {
-                                if key == Keyword::ENDIF {
-                                    break;
-                                }
-                            }
                             Node::ElseExpression {
                                 condition: _,
                                 then_branch: _,
@@ -191,7 +201,12 @@ impl<'a> Parser<'a> {
                                 break;
                             }
                             _ => {
-                                then_branch.push(branch_for_then);
+                                if !check_for_else {
+                                    then_branch.push(branch_for_then);
+                                }
+                                else {
+                                    break;
+                                }
                             }
                         }
                     }

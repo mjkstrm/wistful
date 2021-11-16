@@ -157,6 +157,8 @@ impl<'a> Iterator for Tokenizer<'a> {
             // Parentheses
             Some('(') => Some(Token::LeftParenthese),
             Some(')') => Some(Token::RightParenthese),
+            Some('{') => Some(Token::LeftBrace),
+            Some('}') => Some(Token::RightBrace),
             // Whitespace
             //c if c?.is_whitespace() => Some(Token::Whitespace),
             Some(' ') => Some(Token::Whitespace),

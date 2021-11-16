@@ -14,6 +14,8 @@ pub enum Token {
     Identifier(String),
     Whitespace,
     EOF,
+    LeftBrace,
+    RightBrace,
 }
 
 #[derive(Debug, Clone, PartialEq)]
