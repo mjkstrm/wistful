@@ -257,6 +257,15 @@ impl<'a> Parser<'a> {
                     r_expr: Box::new(r_expr),
                 })
             }
+            Token::Subtract => {
+                let _capture = self.get_next_token();
+                let r_expr = self.generate_ast(Precedence::AddAndSubtract)?;
+                Ok(Node::BinaryExpr {
+                    l_expr: Box::new(l_expr),
+                    operator: Token::Subtract,
+                    r_expr: Box::new(r_expr),
+                })
+            }
             Token::Multiply => {
                 let _capture = self.get_next_token();
                 let r_expr = self.generate_ast(Precedence::MultiplyAndDivide)?;
@@ -309,3 +318,53 @@ impl fmt::Display for ParseError {
         }
     }
 }
+
+
+#[cfg(test)]
+mod tests{
+    use super::*;
+    #[test]
+    fn test_binary_expressions() {
+        let mut parser = Parser::new("
+            1+2
+            1-1
+            2*2
+            10/2
+            5^2
+            x + 2
+            ").unwrap();
+        let add = Node::BinaryExpr { l_expr: Box::new(Node::NumberExpression(1.0)), operator: Token::Add, r_expr: Box::new(Node::NumberExpression(2.0)) };
+        let subtract = Node::BinaryExpr { l_expr: Box::new(Node::NumberExpression(1.0)), operator: Token::Subtract, r_expr: Box::new(Node::NumberExpression(1.0))};
+        let multiply = Node::BinaryExpr { l_expr: Box::new(Node::NumberExpression(2.0)), operator: Token::Multiply, r_expr: Box::new(Node::NumberExpression(2.0))};
+        let divide = Node::BinaryExpr { l_expr: Box::new(Node::NumberExpression(10.0)), operator: Token::Divide, r_expr: Box::new(Node::NumberExpression(2.0))};
+        let pow = Node::BinaryExpr { l_expr: Box::new(Node::NumberExpression(5.0)), operator: Token::Pow, r_expr: Box::new(Node::NumberExpression(2.0))};
+        let add_to_variable = Node::BinaryExpr { l_expr: Box::new(Node::IdentifierExpression("x".to_string())), operator: Token::Add, r_expr: Box::new(Node::NumberExpression(2.0))};
+
+        let mut expected_expressions : Vec<Node> = Vec::new();
+        expected_expressions.push(add);
+        expected_expressions.push(subtract);
+        expected_expressions.push(multiply);
+        expected_expressions.push(divide);
+        expected_expressions.push(pow);
+        expected_expressions.push(add_to_variable);
+        
+        assert_eq!(parser.parse().unwrap(), expected_expressions);
+    } 
+    #[test]
+    fn test_identifier_expression() {
+        let mut parser = Parser::new("x").unwrap();
+        let expected = Node::IdentifierExpression("x".to_string());
+
+        assert_eq!(parser.parse().unwrap()[0], expected);
+    }
+    #[test]
+    fn test_assignment_expression() {
+        let mut parser = Parser::new("x = 5").unwrap();
+        let expected = Node::AssignmentExpression { 
+            identifier: Box::new(Node::IdentifierExpression("x".to_string())), assignment_operator: Token::Assignment, expr: Box::new(Node::NumberExpression(5.0))
+        };
+        assert_eq!(parser.parse().unwrap()[0], expected);
+    }
+}
+
+

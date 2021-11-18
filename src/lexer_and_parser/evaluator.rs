@@ -134,6 +134,9 @@ impl Evaluator {
                     Token::Add => {
                         Ok(self.evaluate_numerics(*l_expr)? + self.evaluate_numerics(*r_expr)?)
                     }
+                    Token::Subtract => {
+                        Ok(self.evaluate_numerics(*l_expr)? - self.evaluate_numerics(*r_expr)?)
+                    }
                     Token::Multiply => {
                         Ok(self.evaluate_numerics(*l_expr)? * self.evaluate_numerics(*r_expr)?)
                     }
