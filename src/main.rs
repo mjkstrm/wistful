@@ -25,6 +25,7 @@ fn get_values(expr: &str, evaluator: &mut Evaluator) -> Result<(), ParseError> {
     // borrowing/cloning of values.
     while expressions.len() > 0 {
         let expression = expressions.remove(0);
+        println!("{0:?}", expression);
         evaluator.ast = Some(expression);
         evaluator.start_evaluating();
     }
