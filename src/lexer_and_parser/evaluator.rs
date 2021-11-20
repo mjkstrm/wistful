@@ -109,10 +109,7 @@ impl Evaluator {
                 then_branch,
                 else_branch,
             } => {
-                // Evaluate whether the condition is true or false.
-                // If true, evaluate "then_branch"
-                // If false, evaluate nothing (until support for else branch is added)
-
+                // Evaluate given if expressions.
                 Ok(self.evaluate_if_expression(*condition, *then_branch, *else_branch)?)
             }
             _ => Err("Couldnt evaluate".into()),
