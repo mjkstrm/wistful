@@ -164,7 +164,7 @@ impl Evaluator {
     fn evaluate_assignments(
         &mut self,
         identifier: Node,
-        assignment_operator: Token,
+        _assignment_operator: Token,
         expr: Node,
     ) -> Result<EvalResult, Box<dyn error::Error>> {
         // Just experimental, so we'll assume that every assignment goes with '='
@@ -218,15 +218,17 @@ impl Evaluator {
         match condition {
             Some(Node::ConditionExpression {
                 l_expr,
-                operator,
+                operator: _,
                 r_expr,
             }) => {
+                // TODO: When different kind of operands are applied for if clauses,
+                // pattern match operator here. Fied is ignored for now. _
                 // Compare each evaluated value. Both type and value is checked here.
                 if self.evaluate(*l_expr)? == self.evaluate(*r_expr)? {
                     // Evaluate block
                     for expression in then_branch {
                         self.ast = Some(expression);
-                        self.start_evaluating();
+                        self.start_evaluating()?;
                     }
                 } else {
                     match else_branch {
@@ -237,7 +239,11 @@ impl Evaluator {
                                 else_branch,
                             } = branch
                             {
-                                self.evaluate_if_expression(*condition, *then_branch, *else_branch);
+                                self.evaluate_if_expression(
+                                    *condition,
+                                    *then_branch,
+                                    *else_branch,
+                                )?;
                             }
                         }
                         None => { /* Nothing to do if branch was not found */ }
@@ -248,19 +254,13 @@ impl Evaluator {
             None => {
                 for expression in then_branch {
                     self.ast = Some(expression);
-                    self.start_evaluating();
+                    self.start_evaluating()?;
                 }
             }
             _ => {
-               // Nothing to do 
+                // Nothing to do
             }
         }
         Ok(EvalResult::EmptyResult)
-    }
-    /*
-    // Evaluate block statements (Then, else, function blocks etc.)
-    // Go through each expression in given branch
-    fn evaluate_block_statements(&mut self, block_statement: Vec<Node>) -> Result<EvalResult, Box<dyn error::Error>> {
-
-    }*/
+    } 
 }

@@ -37,7 +37,7 @@ pub enum Node {
     },
     EOF(String),
 }
-
+/* Dead code
 // Check wheter current node is an binary node NOT USED ATM
 impl Node {
     pub fn is_binary_expr(&self) -> bool {
@@ -50,4 +50,4 @@ impl Node {
             _ => false,
         }
     }
-}
+}*/

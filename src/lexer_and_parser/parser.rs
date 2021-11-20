@@ -30,7 +30,7 @@ impl<'a> Parser<'a> {
     // Method in the public interface for parsing the expression
     pub fn parse(&mut self) -> Result<Vec<Node>, ParseError> {
         while self.current_token == Token::Whitespace {
-            self.get_next_token();
+            self.get_next_token()?;
         }
         let mut nodes = Vec::new();
         while self.current_token != Token::EOF {
@@ -130,23 +130,26 @@ impl<'a> Parser<'a> {
             }
             Token::Literal { literal, keyword } => {
                 self.get_next_token()?;
-                // If clause, TODO: Comment this shit out properly
-                if keyword == Keyword::IF { 
+                // Handle if clause
+                if keyword == Keyword::IF {
+                    // Parse condition for THEN branch
                     let condition = Some(self.generate_ast(Precedence::Default)?);
+                    // If we're missing an opening brace for the branch, return error.
                     if !self.check_token(Token::LeftBrace)? {
-                        return Err(ParseError::UnableToParse(format!("Missing opening brace for {0:?}", condition))) 
+                        return Err(ParseError::UnableToParse(format!(
+                            "Missing opening brace for {0:?}",
+                            condition
+                        )));
                     }
                     // Generate nodes for the branch until ENDIF or ELSE is reached
                     let mut else_branch = None;
                     let mut then_branch = Vec::new();
+                    // If closing branch is found, set this flag variable to true, and check
+                    // whether else clause is to be parsed.
                     let mut check_for_else = false;
-                    while let branch_for_then = self.generate_ast(Precedence::Default)? {
-                        // If closing brace is found, stop iterating.
-                        if self.check_token(Token::RightBrace)? {
-                            check_for_else = true;
-                            break;
-                        }
-                        match branch_for_then { 
+                    loop {
+                        let branch_for_then = self.generate_ast(Precedence::Default)?;
+                        match branch_for_then {
                             Node::ElseExpression {
                                 condition: _,
                                 then_branch: _,
@@ -158,8 +161,11 @@ impl<'a> Parser<'a> {
                             _ => {
                                 if !check_for_else {
                                     then_branch.push(branch_for_then);
-                                }
-                                else {
+                                    // If closing brace is found, stop iterating.
+                                    if self.check_token(Token::RightBrace)? {
+                                        check_for_else = true;
+                                    }
+                                } else {
                                     break;
                                 }
                             }
@@ -173,25 +179,29 @@ impl<'a> Parser<'a> {
                 }
                 // Parse ELSE and ELIF branches
                 if keyword == Keyword::ELSE || keyword == Keyword::ELIF {
+                    // Initialize condition as None, since condition is not mandatory for an else
+                    // clause
                     let mut condition: Option<Node> = None;
                     // Whether we have a condition to evaluate or not.
                     if keyword == Keyword::ELIF {
                         condition = Some(self.generate_ast(Precedence::Default)?);
                     }
+                    // If we're missing an opening brace for the branch, return error.
                     if !self.check_token(Token::LeftBrace)? {
-                        return Err(ParseError::UnableToParse(format!("Missing opening brace for {0:?}", condition))) 
+                        return Err(ParseError::UnableToParse(format!(
+                            "Missing opening brace for {0:?}",
+                            condition
+                        )));
                     }
                     // Generate a statement
                     let mut else_branch = None;
                     let mut then_branch = Vec::new();
+                    // If closing branch is found, set this flag variable to true, and check
+                    // whether else clause is to be parsed
                     let mut check_for_else = false;
-                    while let branch_for_then = self.generate_ast(Precedence::Default)? {
-                        // If closing brace is found, stop iterating.
-                        if self.check_token(Token::RightBrace)? {
-                            check_for_else = true;
-                            break; 
-                        }
-                        match branch_for_then { 
+                    loop {
+                        let branch_for_then = self.generate_ast(Precedence::Default)?;
+                        match branch_for_then {
                             Node::ElseExpression {
                                 condition: _,
                                 then_branch: _,
@@ -203,8 +213,16 @@ impl<'a> Parser<'a> {
                             _ => {
                                 if !check_for_else {
                                     then_branch.push(branch_for_then);
-                                }
-                                else {
+                                    // If closing brace is found, stop iterating.
+                                    if self.check_token(Token::RightBrace)? {
+                                        check_for_else = true;
+                                        // If there is no condition, break out, we know that wont
+                                        // be another else in the tree
+                                        if keyword == Keyword::ELSE {
+                                            break;
+                                        }
+                                    }
+                                } else {
                                     break;
                                 }
                             }
@@ -218,7 +236,12 @@ impl<'a> Parser<'a> {
                 }
                 return Ok(Node::LiteralExpression(literal, keyword));
             }
-            _ => return Err(ParseError::InvalidOperator("Bad start".to_string())),
+            _ => {
+                return Err(ParseError::UnableToParse(format!(
+                    "Could not parse Token: {0:?}",
+                    self.current_token
+                )))
+            }
         }
     }
 
@@ -249,7 +272,7 @@ impl<'a> Parser<'a> {
         let token = self.current_token.clone();
         match token {
             Token::Add => {
-                let _capture = self.get_next_token();
+                let _capture = self.get_next_token()?;
                 let r_expr = self.generate_ast(Precedence::AddAndSubtract)?;
                 Ok(Node::BinaryExpr {
                     l_expr: Box::new(l_expr),
@@ -258,7 +281,7 @@ impl<'a> Parser<'a> {
                 })
             }
             Token::Subtract => {
-                let _capture = self.get_next_token();
+                let _capture = self.get_next_token()?;
                 let r_expr = self.generate_ast(Precedence::AddAndSubtract)?;
                 Ok(Node::BinaryExpr {
                     l_expr: Box::new(l_expr),
@@ -267,7 +290,7 @@ impl<'a> Parser<'a> {
                 })
             }
             Token::Multiply => {
-                let _capture = self.get_next_token();
+                let _capture = self.get_next_token()?;
                 let r_expr = self.generate_ast(Precedence::MultiplyAndDivide)?;
                 Ok(Node::BinaryExpr {
                     l_expr: Box::new(l_expr),
@@ -276,7 +299,7 @@ impl<'a> Parser<'a> {
                 })
             }
             Token::Divide => {
-                let _capture = self.get_next_token();
+                let _capture = self.get_next_token()?;
                 let r_expr = self.generate_ast(Precedence::MultiplyAndDivide)?;
                 Ok(Node::BinaryExpr {
                     l_expr: Box::new(l_expr),
@@ -285,7 +308,7 @@ impl<'a> Parser<'a> {
                 })
             }
             Token::Pow => {
-                let _capture = self.get_next_token();
+                let _capture = self.get_next_token()?;
                 let r_expr = self.generate_ast(Precedence::Power)?;
                 Ok(Node::BinaryExpr {
                     l_expr: Box::new(l_expr),
@@ -318,7 +341,3 @@ impl fmt::Display for ParseError {
         }
     }
 }
-
-
-
-
