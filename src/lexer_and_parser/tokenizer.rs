@@ -1,8 +1,10 @@
 // Standard libraries
 use std::iter::Peekable;
 use std::str::Chars;
+
 // Internal modules
 use super::token::{Keyword, Token};
+
 // Tokenizer
 /*
     Lifetime annotation <'a> makes sure,
@@ -83,37 +85,37 @@ impl<'a> Iterator for Tokenizer<'a> {
                         return Some(Token::Literal {
                             literal: characters,
                             keyword: Keyword::True,
-                        })
+                        });
                     }
                     "false" => {
                         return Some(Token::Literal {
                             literal: characters,
                             keyword: Keyword::False,
-                        })
+                        });
                     }
                     "if" => {
                         return Some(Token::Literal {
                             literal: characters,
                             keyword: Keyword::IF,
-                        })
+                        });
                     }
                     "endif" => {
                         return Some(Token::Literal {
                             literal: characters,
                             keyword: Keyword::ENDIF,
-                        })
+                        });
                     }
                     "else" => {
                         return Some(Token::Literal {
                             literal: characters,
                             keyword: Keyword::ELSE,
-                        })
+                        });
                     }
                     "elif" => {
                         return Some(Token::Literal {
                             literal: characters,
                             keyword: Keyword::ELIF,
-                        })
+                        });
                     }
                     // Rust retardness :D
                     _ => return Some(Token::Identifier(characters)),

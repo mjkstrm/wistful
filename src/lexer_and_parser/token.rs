@@ -32,7 +32,8 @@ pub enum Keyword {
 // Arithmetic precedences
 #[derive(PartialEq, PartialOrd)]
 pub enum Precedence {
-    Default, // 0,
+    Default,
+    // 0,
     AddAndSubtract,
     MultiplyAndDivide,
     Power,

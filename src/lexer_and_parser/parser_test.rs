@@ -1,10 +1,12 @@
 // Different test for expressions which parser generates.
 #[cfg(test)]
 mod parser_test {
-    use super::super::*;
     use crate::lexer_and_parser::ast::Node;
     use crate::lexer_and_parser::parser::Parser;
     use crate::lexer_and_parser::token::Token;
+
+    use super::super::*;
+
     #[test]
     fn test_binary_expressions() {
         let mut parser = Parser::new(
@@ -17,7 +19,7 @@ mod parser_test {
             x + 2
             ",
         )
-        .unwrap();
+            .unwrap();
         // 1 + 2
         let add = Node::BinaryExpr {
             l_expr: Box::new(Node::NumberExpression(1.0)),
@@ -59,6 +61,7 @@ mod parser_test {
 
         assert_eq!(parser.parse().unwrap(), expected_expressions);
     }
+
     #[test]
     fn test_precedence() {
         let mut parser = Parser::new(
@@ -66,7 +69,7 @@ mod parser_test {
             2+2*5
             (2+2)*5",
         )
-        .unwrap();
+            .unwrap();
         // 2 + 2 * 5
         let multi_precedence = Node::BinaryExpr {
             l_expr: Box::new(Node::NumberExpression(2.0)),
@@ -90,6 +93,7 @@ mod parser_test {
         let mut expected_expressions = vec![multi_precedence, parentheses_precedence];
         assert_eq!(parser.parse().unwrap(), expected_expressions)
     }
+
     #[test]
     fn test_identifier_expression() {
         let mut parser = Parser::new("x").unwrap();
@@ -97,6 +101,7 @@ mod parser_test {
 
         assert_eq!(parser.parse().unwrap()[0], expected);
     }
+
     #[test]
     fn test_assignment_expression() {
         let mut parser = Parser::new("x = 5").unwrap();

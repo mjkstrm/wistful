@@ -2,6 +2,7 @@
 use std::collections::HashMap;
 use std::error;
 use std::fmt;
+
 // Internal modules
 use super::ast::Node;
 use super::token::{Keyword, Token};
@@ -11,6 +12,7 @@ pub struct Evaluator {
     // Storing evaluated variables
     pub variable_storage: HashMap<String, VariableValue>,
 }
+
 // TODO: Move to a separate file which contains helper classes/methods.
 // TODO: struct -> enum, different variants for different types. i.e string, float, int etc.
 #[derive(Debug)]
@@ -33,6 +35,7 @@ pub enum EvalResult {
     },
     EmptyResult,
 }
+
 // Display trait for EvalResult. Used to parse values for variable instantiating and debugging.
 impl fmt::Display for EvalResult {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -214,10 +217,10 @@ impl Evaluator {
         //
         match condition {
             Some(Node::ConditionExpression {
-                l_expr,
-                operator: _,
-                r_expr,
-            }) => {
+                     l_expr,
+                     operator: _,
+                     r_expr,
+                 }) => {
                 // TODO: When different kind of operands are applied for if clauses,
                 // pattern match operator here. Fied is ignored for now. _
                 // Compare each evaluated value. Both type and value is checked here.
@@ -259,5 +262,5 @@ impl Evaluator {
             }
         }
         Ok(EvalResult::EmptyResult)
-    } 
+    }
 }

@@ -1,4 +1,5 @@
 use std::fmt;
+
 // Internal uses
 use super::ast::Node;
 use super::token::{Keyword, Precedence, Token};
@@ -132,107 +133,11 @@ impl<'a> Parser<'a> {
                 self.get_next_token()?;
                 // Handle if clause
                 if keyword == Keyword::IF {
-                    // Parse condition for THEN branch
-                    let condition = Some(self.generate_ast(Precedence::Default)?);
-                    // If we're missing an opening brace for the branch, return error.
-                    if !self.check_token(Token::LeftBrace)? {
-                        return Err(ParseError::UnableToParse(format!(
-                            "Missing opening brace for {0:?}",
-                            condition
-                        )));
-                    }
-                    // Generate nodes for the branch until ENDIF or ELSE is reached
-                    let mut else_branch = None;
-                    let mut then_branch = Vec::new();
-                    // If closing branch is found, set this flag variable to true, and check
-                    // whether else clause is to be parsed.
-                    let mut check_for_else = false;
-                    loop {
-                        let branch_for_then = self.generate_ast(Precedence::Default)?;
-                        match branch_for_then {
-                            Node::ElseExpression {
-                                condition: _,
-                                then_branch: _,
-                                else_branch: _,
-                            } => {
-                                else_branch = Some(branch_for_then);
-                                break;
-                            }
-                            _ => {
-                                if !check_for_else {
-                                    then_branch.push(branch_for_then);
-                                    // If closing brace is found, stop iterating.
-                                    if self.check_token(Token::RightBrace)? {
-                                        check_for_else = true;
-                                    }
-                                } else {
-                                    break;
-                                }
-                            }
-                        }
-                    }
-                    return Ok(Node::IfExpression {
-                        condition: Box::new(condition),
-                        then_branch: Box::new(then_branch),
-                        else_branch: Box::new(else_branch),
-                    });
+                    return self.parse_if_expression();
                 }
                 // Parse ELSE and ELIF branches
-                if keyword == Keyword::ELSE || keyword == Keyword::ELIF {
-                    // Initialize condition as None, since condition is not mandatory for an else
-                    // clause
-                    let mut condition: Option<Node> = None;
-                    // Whether we have a condition to evaluate or not.
-                    if keyword == Keyword::ELIF {
-                        condition = Some(self.generate_ast(Precedence::Default)?);
-                    }
-                    // If we're missing an opening brace for the branch, return error.
-                    if !self.check_token(Token::LeftBrace)? {
-                        return Err(ParseError::UnableToParse(format!(
-                            "Missing opening brace for {0:?}",
-                            condition
-                        )));
-                    }
-                    // Generate a statement
-                    let mut else_branch = None;
-                    let mut then_branch = Vec::new();
-                    // If closing branch is found, set this flag variable to true, and check
-                    // whether else clause is to be parsed
-                    let mut check_for_else = false;
-                    loop {
-                        let branch_for_then = self.generate_ast(Precedence::Default)?;
-                        match branch_for_then {
-                            Node::ElseExpression {
-                                condition: _,
-                                then_branch: _,
-                                else_branch: _,
-                            } => {
-                                else_branch = Some(branch_for_then);
-                                break;
-                            }
-                            _ => {
-                                if !check_for_else {
-                                    then_branch.push(branch_for_then);
-                                    // If closing brace is found, stop iterating.
-                                    if self.check_token(Token::RightBrace)? {
-                                        check_for_else = true;
-                                        // If there is no condition, break out, we know that wont
-                                        // be another else in the tree
-                                        if keyword == Keyword::ELSE {
-                                            break;
-                                        }
-                                    }
-                                } else {
-                                    break;
-                                }
-                            }
-                        }
-                    }
-                    return Ok(Node::ElseExpression {
-                        condition: Box::new(condition),
-                        then_branch: Box::new(then_branch),
-                        else_branch: Box::new(else_branch),
-                    });
+                else if keyword == Keyword::ELSE || keyword == Keyword::ELIF {
+                   return self.parse_else_expression(keyword);
                 }
                 return Ok(Node::LiteralExpression(literal, keyword));
             }
@@ -240,9 +145,116 @@ impl<'a> Parser<'a> {
                 return Err(ParseError::UnableToParse(format!(
                     "Could not parse Token: {0:?}",
                     self.current_token
-                )))
+                )));
             }
         }
+    }
+
+    // Parse If, Else, Else if.
+    fn parse_if_expression(&mut self) -> Result<Node, ParseError> {
+        // Handle if clause
+        // Parse condition for THEN branch
+        let condition = Some(self.generate_ast(Precedence::Default)?);
+        // If we're missing an opening brace for the branch, return error.
+        if !self.check_token(Token::LeftBrace)? {
+            return Err(ParseError::UnableToParse(format!(
+                "Missing opening brace for {0:?}",
+                condition
+            )));
+        }
+        // Generate nodes for the branch until ENDIF or ELSE is reached
+        let mut else_branch = None;
+        let mut then_branch = Vec::new();
+        // If closing branch is found, set this flag variable to true, and check
+        // whether else clause is to be parsed.
+        let mut check_for_else = false;
+        loop {
+            let branch_for_then = self.generate_ast(Precedence::Default)?;
+            match branch_for_then {
+                Node::ElseExpression {
+                    condition: _,
+                    then_branch: _,
+                    else_branch: _,
+                } => {
+                    else_branch = Some(branch_for_then);
+                    break;
+                }
+                _ => {
+                    if !check_for_else {
+                        then_branch.push(branch_for_then);
+                        // If closing brace is found, stop iterating.
+                        if self.check_token(Token::RightBrace)? {
+                            check_for_else = true;
+                        }
+                    } else {
+                        break;
+                    }
+                }
+            }
+        }
+        return Ok(Node::IfExpression {
+            condition: Box::new(condition),
+            then_branch: Box::new(then_branch),
+            else_branch: Box::new(else_branch),
+        });
+    }
+
+    fn parse_else_expression(&mut self, keyword: Keyword) -> Result<Node, ParseError> {
+        // Parse ELSE and ELIF branches
+        // Initialize condition as None, since condition is not mandatory for an else
+        // clause
+        let mut condition: Option<Node> = None;
+        // Whether we have a condition to evaluate or not.
+        if keyword == Keyword::ELIF {
+            condition = Some(self.generate_ast(Precedence::Default)?);
+        }
+        // If we're missing an opening brace for the branch, return error.
+        if !self.check_token(Token::LeftBrace)? {
+            return Err(ParseError::UnableToParse(format!(
+                "Missing opening brace for {0:?}",
+                condition
+            )));
+        }
+        // Generate a statement
+        let mut else_branch = None;
+        let mut then_branch = Vec::new();
+        // If closing branch is found, set this flag variable to true, and check
+        // whether else clause is to be parsed
+        let mut check_for_else = false;
+        loop {
+            let branch_for_then = self.generate_ast(Precedence::Default)?;
+            match branch_for_then {
+                Node::ElseExpression {
+                    condition: _,
+                    then_branch: _,
+                    else_branch: _,
+                } => {
+                    else_branch = Some(branch_for_then);
+                    break;
+                }
+                _ => {
+                    if !check_for_else {
+                        then_branch.push(branch_for_then);
+                        // If closing brace is found, stop iterating.
+                        if self.check_token(Token::RightBrace)? {
+                            check_for_else = true;
+                            // If there is no condition, break out, we know that wont
+                            // be another else in the tree
+                            if keyword == Keyword::ELSE {
+                                break;
+                            }
+                        }
+                    } else {
+                        break;
+                    }
+                }
+            }
+        }
+        return Ok(Node::ElseExpression {
+            condition: Box::new(condition),
+            then_branch: Box::new(then_branch),
+            else_branch: Box::new(else_branch),
+        });
     }
 
     // Closing parenthese is always expected, if not found return error
@@ -327,6 +339,7 @@ impl std::convert::From<std::boxed::Box<dyn std::error::Error>> for ParseError {
         return ParseError::UnableToParse("Unable to parse".into());
     }
 }
+
 #[derive(Debug)]
 pub enum ParseError {
     InvalidOperator(String),

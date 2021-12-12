@@ -1,16 +1,21 @@
-// Add internal modules & std
-mod lexer_and_parser;
+use std::fs;
+
 use lexer_and_parser::evaluator::Evaluator;
 use lexer_and_parser::parser::{ParseError, Parser};
-use std::fs;
+
+// Add internal modules & std
+mod lexer_and_parser;
+
 fn main() {
     // Initialize evaluator.
-    let mut evaluator = Evaluator::new(None);
+    let mut evaluator: Evaluator = Evaluator::new(None);
     let input =
-        //fs::read_to_string("/Users/mjkstrm/wistful-test/test.txt").expect("Could not read file.");
         fs::read_to_string("test-source").expect("\x1b[0;31mTest source was not found.\x1b[0m");
     println!("{0:?}", input);
-    match get_values(&input, &mut evaluator) {
+    match get_values(
+        &input,
+        &mut evaluator,
+    ) {
         Ok(_) => println!("Evaluating succeeded."),
         Err(e) => println!("\x1b[0;31mParse error: {0}\x1b[0m", e),
     }
