@@ -115,7 +115,7 @@ impl Evaluator {
                 // Evaluate given if expressions.
                 Ok(self.evaluate_if_expression(*condition, *then_branch, *else_branch)?)
             }
-            _ => Err("Couldnt evaluate".into()),
+            _ => Err("Couldn't evaluate".into()),
         }
     }
 
@@ -173,7 +173,7 @@ impl Evaluator {
         let value = self.evaluate(expr)?;
         // Initialize an empty string for variable name.
         let mut variable_name = String::new();
-        // Set identifier
+        // Set identifier - as an EvalResult
         let identifier_str = match identifier {
             Node::IdentifierExpression(val) => {
                 variable_name = val.clone();
@@ -206,7 +206,7 @@ impl Evaluator {
             value: Box::new(value),
         })
     }
-    // Evaluate blocks
+    // Evaluate if/else/elif expressions
     fn evaluate_if_expression(
         &mut self,
         condition: Option<Node>,

@@ -37,3 +37,102 @@ pub enum Node {
     },
     EOF(String),
 }
+
+impl Node {
+    pub fn print_stuff(&self, expr: Node, mut indent: i16) -> String {
+        let mut result = String::new();
+        let mut i = 0;
+        let mut indent_str = String::new();
+        while i < indent {
+            indent_str += " ";
+            i += 1;
+        }
+        indent_str += "-";
+        match expr {
+            Node::NumberExpression(f) => {
+                println!("\x1b[0;34m{0}Number: {1} \x1b[0m", indent_str, f);
+                return format!("{0}Number: {1}", indent_str, f);
+            }
+            Node::NegativeNumberExpression(f) => {
+                //return format!("");
+            }
+            Node::LiteralExpression( id, _ ) => {
+                println!("\x1b[0;34m{0}Literal: {1} \x1b[0m", indent_str, id);
+                return format!("{0}Literal: {1}", indent_str, id);
+            }
+            Node::IdentifierExpression(id) => {
+                println!("\x1b[0;34m{0}Identifier: {1} \x1b[0m", indent_str, id);
+                return format!("{0}Identifier: {1}", indent_str, id);
+            }
+            Node::BinaryExpr { l_expr, operator, r_expr } => {
+                println!("\x1b[0;32m{0}BinaryExpression: \x1b[0m", indent_str);
+                //println!("{0}", &*self.print_stuff(*l_expr, indent + 1));
+                self.print_stuff(*l_expr, indent + 1);
+                println!(" \x1b[0;34m{0}{1:?} \x1b[0m", indent_str, operator);
+                self.print_stuff(*r_expr, indent + 1);
+                //println!("{0}", &*self.print_stuff(*r_expr, indent + 1));
+            }
+            Node::AssignmentExpression { identifier, assignment_operator, expr } => {
+                println!("\x1b[0;32m{0}AssignmentExpression: \x1b[0m", indent_str);
+                //println!("{0}", &*self.print_stuff(*identifier, indent + 1));
+                self.print_stuff(*identifier, indent + 1);
+                println!(" \x1b[0;34m{0}{1:?} \x1b[0m", indent_str, assignment_operator);
+                //println!("{0}", &*self.print_stuff(*expr, indent + 1));
+                self.print_stuff(*expr, indent + 1);
+            }
+            Node::ConditionExpression { l_expr, operator, r_expr } => {
+                //println!("{0}", &*self.print_stuff(*l_expr, indent + 1));
+                self.print_stuff(*l_expr, indent + 1);
+                println!(" \x1b[0;32m{0}{1:?} \x1b[0m", indent_str, operator);
+                self.print_stuff(*r_expr, indent + 1);
+                //println!("{0}", &*self.print_stuff(*r_expr, indent + 1));
+            }
+            Node::IfExpression { condition, then_branch, else_branch } => {
+                let node = condition.unwrap();
+                println!("\x1b[0;32m{0}IfExpression: \x1b[0m", indent_str);
+                //println!("{0}", &*self.print_stuff(node, indent + 1));
+                self.print_stuff(node, indent);
+                println!("  \x1b[0;32m{0}THEN \x1b[0m", indent_str);
+                for node in then_branch.into_iter() {
+
+                    self.print_stuff(node, indent + 3);
+                    //println!("{0}", &*self.print_stuff(node, indent + 3));
+                }
+                if else_branch.is_some() {
+                    let else_node = else_branch.unwrap();
+                    self.print_stuff(else_node, indent + 1);
+                    //println!("{0}", &*self.print_stuff(else_node, indent + 1));
+                }
+            }
+            Node::ElseExpression { condition, then_branch, else_branch } => {
+                if condition.is_some()
+                {
+                    let node = condition.unwrap();
+                    println!("\x1b[0;32m{0}ElseIfExpression: \x1b[0m", indent_str);
+                    self.print_stuff(node, indent + 1);
+                    //println!("{0}", &*self.print_stuff(node, indent + 1));
+                    println!("   \x1b[0;32m{0}THEN: \x1b[0m", indent_str);
+                }
+                else if condition.is_none() {
+                    println!("\x1b[0;32m{0}ElseExpression: \x1b[0m", indent_str);
+                }
+
+                for node in then_branch.into_iter() {
+
+                    self.print_stuff(node, indent + 4);
+                    //println!("{0}", &*self.print_stuff(node, indent + 3));
+                }
+                if else_branch.is_some() {
+                    let else_node = else_branch.unwrap();
+                    self.print_stuff(else_node, indent + 1);
+                    //println!("{0}", &*self.print_stuff(else_node, indent + 1));
+                }
+            }
+            Node::EOF(_) => {
+                return format!("Hm");
+            }
+        };
+        return "".to_string();
+    }
+
+}

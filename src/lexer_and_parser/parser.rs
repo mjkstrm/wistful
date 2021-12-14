@@ -92,16 +92,8 @@ impl<'a> Parser<'a> {
             Token::LeftParenthese => {
                 self.get_next_token()?;
                 let l_expr = self.generate_ast(Precedence::Default)?;
+                // Make sure there is a pair for the opening parenthese. If not, return an error.
                 self.check_paren(Token::RightParenthese)?;
-
-                if self.current_token == Token::LeftParenthese {
-                    let r_expr = self.generate_ast(Precedence::MultiplyAndDivide)?;
-                    return Ok(Node::BinaryExpr {
-                        l_expr: Box::new(l_expr),
-                        operator: Token::Multiply,
-                        r_expr: Box::new(r_expr),
-                    });
-                }
 
                 Ok(l_expr)
             }
@@ -198,9 +190,8 @@ impl<'a> Parser<'a> {
             else_branch: Box::new(else_branch),
         });
     }
-
+    // Parse else/elif expressions
     fn parse_else_expression(&mut self, keyword: Keyword) -> Result<Node, ParseError> {
-        // Parse ELSE and ELIF branches
         // Initialize condition as None, since condition is not mandatory for an else
         // clause
         let mut condition: Option<Node> = None;

@@ -5,7 +5,6 @@ mod parser_test {
     use crate::lexer_and_parser::parser::Parser;
     use crate::lexer_and_parser::token::Token;
 
-    use super::super::*;
 
     #[test]
     fn test_binary_expressions() {
@@ -90,7 +89,7 @@ mod parser_test {
             operator: Token::Multiply,
             r_expr: Box::new(Node::NumberExpression(5.0)),
         };
-        let mut expected_expressions = vec![multi_precedence, parentheses_precedence];
+        let expected_expressions = vec![multi_precedence, parentheses_precedence];
         assert_eq!(parser.parse().unwrap(), expected_expressions)
     }
 

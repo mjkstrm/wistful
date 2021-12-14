@@ -2,6 +2,7 @@ use std::fs;
 
 use lexer_and_parser::evaluator::Evaluator;
 use lexer_and_parser::parser::{ParseError, Parser};
+use crate::lexer_and_parser::ast::Node;
 
 // Add internal modules & std
 mod lexer_and_parser;
@@ -11,7 +12,7 @@ fn main() {
     let mut evaluator: Evaluator = Evaluator::new(None);
     let input =
         fs::read_to_string("test-source").expect("\x1b[0;31mTest source was not found.\x1b[0m");
-    println!("{0:?}", input);
+    //println!("{0:?}", input);
     match get_values(
         &input,
         &mut evaluator,
@@ -25,12 +26,24 @@ fn main() {
 fn get_values(expr: &str, evaluator: &mut Evaluator) -> Result<(), ParseError> {
     // Vector of expressions to be evaluated
     let mut expressions = Parser::new(&expr)?.parse()?;
+    // Print tree
+    print_ast(expressions);
     // Capture each removed node to a variable and feed it to evaluator to avoid
     // borrowing/cloning of values.
+
+    /*
     while expressions.len() > 0 {
         let expression = expressions.remove(0);
         evaluator.ast = Some(expression);
         evaluator.start_evaluating()?;
-    }
+    }*/
     Ok(())
+}
+
+fn print_ast(mut expressions: Vec<Node>) -> () {
+    while expressions.len() > 0 {
+        let mut expression = expressions.remove(0);
+        expression.print_stuff(expression.clone(), 1);
+        //println!("{:?}", expression.print_stuff(expression.clone(), 0));
+    }
 }
