@@ -4,6 +4,7 @@ mod parser_test {
     use crate::lexer_and_parser::ast::Node;
     use crate::lexer_and_parser::parser::Parser;
     use crate::lexer_and_parser::token::Token;
+    use crate::Node::{IdentifierExpression, NumberExpression};
 
 
     #[test]
@@ -111,5 +112,87 @@ mod parser_test {
             expr: Box::new(Node::NumberExpression(5.0)),
         };
         assert_eq!(parser.parse().unwrap()[0], expected);
+    }
+
+    #[test]
+    fn test_if_expression() {
+        let mut parser = Parser::new(
+            "
+            if x == 15 {
+                x = 25
+            }
+            elif x == 10 {
+                y = 10
+                x = y + 2
+            }
+            else {
+                x = 17
+            }").unwrap();
+        // Expected expression...
+        // First form the conditions:
+        // if condition - x == 15
+        let if_condition = Box::new(Some(Node::ConditionExpression {
+            l_expr: Box::new(Node::IdentifierExpression("x".to_string())),
+            operator: Token::Equals,
+            r_expr: Box::new(Node::NumberExpression(15.)),
+        }));
+        // then branch.. x = 25
+        let then = Box::new(vec![Node::AssignmentExpression {
+            identifier: Box::new(Node::IdentifierExpression("x".to_string())),
+            assignment_operator: Token::Assignment,
+            expr: Box::new(NumberExpression(25.))
+        }]);
+        // elif condition - x == 10
+        let elif_condition = Box::new(Some(Node::ConditionExpression {
+            l_expr: Box::new(Node::IdentifierExpression("x".to_string())),
+            operator: Token::Equals,
+            r_expr: Box::new(Node::NumberExpression(10.0)),
+        }));
+        // elif then...
+        // y = 10
+        // x = y + 2
+        let elif_then = Box::new(vec![
+            Node::AssignmentExpression {
+                identifier: Box::new(Node::IdentifierExpression("y".to_string())),
+                assignment_operator: Token::Assignment,
+                expr: Box::new(NumberExpression(10.))
+            },
+            Node::AssignmentExpression {
+                identifier: Box::new(Node::IdentifierExpression("x".to_string())),
+                assignment_operator: Token::Assignment,
+                expr: Box::new(Node::BinaryExpr {
+                    l_expr: Box::new(IdentifierExpression("y".to_string())),
+                    operator: Token::Add,
+                    r_expr: Box::new(Node::NumberExpression(2.))
+                })
+            }]);
+        // else then
+        // x = 17
+        let else_then = Box::new(vec![Node::AssignmentExpression {
+            identifier: Box::new(Node::IdentifierExpression("x".to_string())),
+            assignment_operator: Token::Assignment,
+            expr: Box::new(NumberExpression(17.))
+        }]);
+
+        // else if expression
+        let elif_expression = Box::new(Some(Node::ElseExpression {
+            condition: elif_condition,
+            then_branch: elif_then,
+            else_branch: Box::new(
+                Some(Node::ElseExpression {
+                    condition: Box::new(None),
+                    then_branch: else_then,
+                    else_branch: Box::new(None)
+                })
+            )
+        }));
+
+        // Now that every neede piece is constructed, form the final if expression
+        let if_expression = Node::IfExpression {
+            condition: if_condition,
+            then_branch: then,
+            else_branch: elif_expression
+        };
+        assert_eq!(parser.parse().unwrap()[0], if_expression);
     }
 }

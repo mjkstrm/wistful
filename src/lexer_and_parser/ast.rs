@@ -39,8 +39,7 @@ pub enum Node {
 }
 
 impl Node {
-    pub fn print_stuff(&self, expr: Node, mut indent: i16) -> String {
-        let mut result = String::new();
+    pub fn print_stuff(&self, expr: Node, indent: i16) -> String {
         let mut i = 0;
         let mut indent_str = String::new();
         while i < indent {
@@ -54,6 +53,7 @@ impl Node {
                 return format!("{0}Number: {1}", indent_str, f);
             }
             Node::NegativeNumberExpression(f) => {
+                println!("\x1b[0;34m{0}NegativeNumber: {1:?} \x1b[0m", indent_str, f);
             }
             Node::LiteralExpression( id, _ ) => {
                 println!("\x1b[0;34m{0}Literal: {1} \x1b[0m", indent_str, id);

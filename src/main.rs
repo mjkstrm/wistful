@@ -26,24 +26,21 @@ fn main() {
 fn get_values(expr: &str, evaluator: &mut Evaluator) -> Result<(), ParseError> {
     // Vector of expressions to be evaluated
     let mut expressions = Parser::new(&expr)?.parse()?;
-    // Print tree
-    print_ast(expressions);
+    // Print parsed expressions
+    print_ast(expressions.clone());
     // Capture each removed node to a variable and feed it to evaluator to avoid
     // borrowing/cloning of values.
-
-    /*
     while expressions.len() > 0 {
         let expression = expressions.remove(0);
         evaluator.ast = Some(expression);
         evaluator.start_evaluating()?;
-    }*/
+    }
     Ok(())
 }
 
 fn print_ast(mut expressions: Vec<Node>) -> () {
     while expressions.len() > 0 {
-        let mut expression = expressions.remove(0);
+        let expression = expressions.remove(0);
         expression.print_stuff(expression.clone(), 1);
-        //println!("{:?}", expression.print_stuff(expression.clone(), 0));
     }
 }

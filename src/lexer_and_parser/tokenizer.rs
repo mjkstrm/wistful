@@ -117,6 +117,12 @@ impl<'a> Iterator for Tokenizer<'a> {
                             keyword: Keyword::ELIF,
                         });
                     }
+                    "for" => {
+                        return Some(Token::Literal {
+                            literal: characters,
+                            keyword: Keyword::FOR,
+                        })
+                    }
                     // Rust retardness :D
                     _ => return Some(Token::Identifier(characters)),
                 };
@@ -130,13 +136,6 @@ impl<'a> Iterator for Tokenizer<'a> {
                         characters.push(self.expr.next()?);
                     }
                 }
-                /*
-                // Check for keywords
-                match characters.as_ref() {
-                    "true" => Some(Token::Keyword(characters, Keyword::True)),
-                    "false" => Some(Token::Keyword(characters, Keyword::False)),
-                    _ => Some(Token::Literal(characters))
-                };*/
                 Some(Token::Literal {
                     literal: characters,
                     keyword: Keyword::None,
@@ -159,6 +158,7 @@ impl<'a> Iterator for Tokenizer<'a> {
             // Parentheses
             Some('(') => Some(Token::LeftParenthese),
             Some(')') => Some(Token::RightParenthese),
+            // Braces
             Some('{') => Some(Token::LeftBrace),
             Some('}') => Some(Token::RightBrace),
             // Whitespace

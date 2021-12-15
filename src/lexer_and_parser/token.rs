@@ -27,6 +27,7 @@ pub enum Keyword {
     ENDIF,
     ELSE,
     ELIF,
+    FOR,
 }
 
 // Arithmetic precedences
