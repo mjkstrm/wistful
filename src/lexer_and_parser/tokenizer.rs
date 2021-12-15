@@ -117,11 +117,11 @@ impl<'a> Iterator for Tokenizer<'a> {
                             keyword: Keyword::ELIF,
                         });
                     }
-                    "for" => {
+                    "while" => {
                         return Some(Token::Literal {
                             literal: characters,
-                            keyword: Keyword::FOR,
-                        })
+                            keyword: Keyword::WHILE,
+                        });
                     }
                     // Rust retardness :D
                     _ => return Some(Token::Identifier(characters)),

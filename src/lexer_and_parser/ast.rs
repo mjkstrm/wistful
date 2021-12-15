@@ -35,6 +35,10 @@ pub enum Node {
         then_branch: Box<Vec<Node>>,
         else_branch: Box<Option<Node>>,
     },
+    WhileExpression{
+        condition: Box<Option<Node>>,
+        then_branch: Box<Vec<Node>>
+    },
     EOF(String),
 }
 
@@ -55,7 +59,7 @@ impl Node {
             Node::NegativeNumberExpression(f) => {
                 println!("\x1b[0;34m{0}NegativeNumber: {1:?} \x1b[0m", indent_str, f);
             }
-            Node::LiteralExpression( id, _ ) => {
+            Node::LiteralExpression(id, _) => {
                 println!("\x1b[0;34m{0}Literal: {1} \x1b[0m", indent_str, id);
                 return format!("{0}Literal: {1}", indent_str, id);
             }
@@ -100,8 +104,7 @@ impl Node {
                     println!("\x1b[0;32m{0}ElseIfExpression: \x1b[0m", indent_str);
                     self.print_stuff(node, indent + 1);
                     println!("   \x1b[0;32m{0}THEN: \x1b[0m", indent_str);
-                }
-                else if condition.is_none() {
+                } else if condition.is_none() {
                     println!("\x1b[0;32m{0}ElseExpression: \x1b[0m", indent_str);
                 }
                 for node in then_branch.into_iter() {
@@ -115,8 +118,8 @@ impl Node {
             Node::EOF(_) => {
                 return format!("Hm");
             }
+            _ => { return format!("Not handled"); }
         };
         return "".to_string();
     }
-
 }

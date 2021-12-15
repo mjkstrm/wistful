@@ -1,4 +1,5 @@
 use std::fmt;
+use crate::Node::ConditionExpression;
 
 // Internal uses
 use super::ast::Node;
@@ -87,6 +88,15 @@ impl<'a> Parser<'a> {
             }
             Token::Num(i) => {
                 self.get_next_token()?;
+                // Check token to know if we're supposed to return an conditional expression
+                if self.check_token(Token::Equals)? {
+                    let r_expr = self.generate_ast(Precedence::Default)?;
+                    return Ok(ConditionExpression {
+                        l_expr: Box::new(Node::NumberExpression(i)),
+                        operator: Token::Equals,
+                        r_expr: Box::new(r_expr)
+                    })
+                }
                 Ok(Node::NumberExpression(i))
             }
             Token::LeftParenthese => {
@@ -129,8 +139,13 @@ impl<'a> Parser<'a> {
                 }
                 // Parse ELSE and ELIF branches
                 else if keyword == Keyword::ELSE || keyword == Keyword::ELIF {
-                   return self.parse_else_expression(keyword);
+                    return self.parse_else_expression(keyword);
                 }
+                // For loop
+                else if keyword == Keyword::WHILE {
+                    return self.parse_while_expression();
+                }
+
                 return Ok(Node::LiteralExpression(literal, keyword));
             }
             _ => {
@@ -161,6 +176,13 @@ impl<'a> Parser<'a> {
         // whether else clause is to be parsed.
         let mut check_for_else = false;
         loop {
+            // If eof has been reached without closing brace, return error.
+            if self.current_token == Token::EOF {
+                return Err(ParseError::UnableToParse(format!(
+                    "Missing closing brace for {0:?}",
+                    condition
+                )));
+            }
             let branch_for_then = self.generate_ast(Precedence::Default)?;
             match branch_for_then {
                 Node::ElseExpression {
@@ -213,6 +235,18 @@ impl<'a> Parser<'a> {
         // whether else clause is to be parsed
         let mut check_for_else = false;
         loop {
+            // If eof has been reached without closing brace, return error.
+            if self.current_token == Token::EOF {
+                if condition.is_some() {
+                    return Err(ParseError::UnableToParse(format!(
+                        "Missing closing brace for {0:?}",
+                        condition
+                    )))
+                }
+                else {
+                    return Err(ParseError::UnableToParse("Missing closing brace for Else".to_string()))
+                }
+            }
             let branch_for_then = self.generate_ast(Precedence::Default)?;
             match branch_for_then {
                 Node::ElseExpression {
@@ -245,6 +279,45 @@ impl<'a> Parser<'a> {
             condition: Box::new(condition),
             then_branch: Box::new(then_branch),
             else_branch: Box::new(else_branch),
+        });
+    }
+
+    fn parse_while_expression(&mut self) -> Result<Node, ParseError> {
+        // Get iteration condition
+        let mut condition: Option<Node> = None;
+        // If next token is opening brace, skip trying to parse an condition for the iteration
+        if !self.check_token(Token::LeftBrace)? {
+            condition = Some(self.generate_ast(Precedence::Default)?);
+        }
+        // If opening brace is not found, return an error
+        if !self.check_token(Token::LeftBrace)? {
+            return Err(ParseError::UnableToParse(format!(
+                "Missing opening brace for {0:?}",
+                condition
+            )))
+        }
+        let mut then_branch = Vec::new();
+        loop {
+            if self.check_token(Token::RightBrace)? {
+                break;
+            }
+            let branch_for_then = self.generate_ast(Precedence::Default)?;
+            then_branch.push(branch_for_then);
+            if self.current_token == Token::EOF {
+                if condition.is_some() {
+                    return Err(ParseError::UnableToParse(format!(
+                        "Missing closing brace for {0:?}",
+                        condition
+                    )))
+                }
+                else {
+                    return Err(ParseError::UnableToParse("Missing closing brace for While".to_string()))
+                }
+            }
+        }
+        return Ok(Node::WhileExpression {
+            condition: Box::new(condition),
+            then_branch: Box::new(then_branch)
         });
     }
 
