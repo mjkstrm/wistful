@@ -52,9 +52,9 @@ impl<'a> Iterator for Tokenizer<'a> {
                 let mut number = next_char?.to_string();
                 /*
                     Numbers need a bit more extra processing,
-                    since we can be dealing with decimals aswell.
+                    since we can be dealing with decimals as well.
 
-                    So we iterate throught the coming characters, and check
+                    So we iterate through the coming characters, and check
                     whether they are a another number or a decimal delimiter.
 
                     If the next characters are numbers or a delimiter -> concat values into a
@@ -80,6 +80,7 @@ impl<'a> Iterator for Tokenizer<'a> {
                         characters.push(self.expr.next()?);
                     }
                 }
+                // Check whether any keywords is matched
                 match characters.as_str() {
                     "true" => {
                         return Some(Token::Literal {
@@ -122,6 +123,12 @@ impl<'a> Iterator for Tokenizer<'a> {
                             literal: characters,
                             keyword: Keyword::WHILE,
                         });
+                    }
+                    "break" => {
+                        return Some(Token::Literal {
+                            literal: characters,
+                            keyword: Keyword::BREAK,
+                        })
                     }
                     // Rust retardness :D
                     _ => return Some(Token::Identifier(characters)),

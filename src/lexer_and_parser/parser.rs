@@ -297,12 +297,14 @@ impl<'a> Parser<'a> {
             )))
         }
         let mut then_branch = Vec::new();
+        // Iterate until closing brace is found.
         loop {
             if self.check_token(Token::RightBrace)? {
                 break;
             }
             let branch_for_then = self.generate_ast(Precedence::Default)?;
             then_branch.push(branch_for_then);
+            // If eof is reached and closing brace is not found, return error.
             if self.current_token == Token::EOF {
                 if condition.is_some() {
                     return Err(ParseError::UnableToParse(format!(
@@ -311,7 +313,7 @@ impl<'a> Parser<'a> {
                     )))
                 }
                 else {
-                    return Err(ParseError::UnableToParse("Missing closing brace for While".to_string()))
+                    return Err(ParseError::UnableToParse("Missing closing brace for While expression.".to_string()))
                 }
             }
         }

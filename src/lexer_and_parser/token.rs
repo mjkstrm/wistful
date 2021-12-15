@@ -28,6 +28,7 @@ pub enum Keyword {
     ELSE,
     ELIF,
     WHILE,
+    BREAK,
 }
 
 // Arithmetic precedences
