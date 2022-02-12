@@ -16,6 +16,8 @@ pub enum Token {
     EOF,
     LeftBrace,
     RightBrace,
+    GreaterThan,
+    LessThan
 }
 
 #[derive(Debug, Clone, PartialEq)]

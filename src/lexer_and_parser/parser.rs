@@ -118,6 +118,7 @@ impl<'a> Parser<'a> {
                         assignment_operator: Token::Assignment,
                         expr: Box::new(r_expr),
                     });
+                    // TODO: Instead of checking if token is an 'equals' token, check for any comparison tokens.
                 } else if self.check_token(Token::Equals)? {
                     let r_expr = self.generate_ast(Precedence::Default)?;
                     let id_expr = Node::IdentifierExpression(string);

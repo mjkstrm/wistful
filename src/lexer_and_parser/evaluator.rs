@@ -218,11 +218,38 @@ impl Evaluator {
         match condition {
             Some(Node::ConditionExpression {
                      l_expr,
-                     operator: _,
+                     operator,
                      r_expr,
                  }) => {
-                // TODO: When different kind of operands are applied for if clauses,
-                // pattern match operator here. Fied is ignored for now. _
+                if self.evaluate_condition_expression(*l_expr, operator, *r_expr)? {
+                    // Evaluate then expression
+                    for expression in then_branch {
+                        self.ast = Some(expression);
+                        self.start_evaluating()?;
+                    }
+                }
+                else {
+                    match else_branch {
+                        Some(branch) => {
+                            if let Node::ElseExpression {
+                                condition,
+                                then_branch,
+                                else_branch,
+                            } = branch
+                            {
+                                self.evaluate_if_expression(
+                                    *condition,
+                                    *then_branch,
+                                    *else_branch,
+                                )?;
+                            }
+                        }
+                        None => { /* Nothing to do if branch was not found */ }
+                    }
+                }
+                /*
+                // TODO: When different kind of operands are applied for if clauses.. Create a function evaluate_condition_expression which return a boolean.
+                // pattern match operator here. Field is ignored for now. _
                 // Compare each evaluated value. Both type and value is checked here.
                 if self.evaluate(*l_expr)? == self.evaluate(*r_expr)? {
                     // Evaluate block
@@ -248,7 +275,7 @@ impl Evaluator {
                         }
                         None => { /* Nothing to do if branch was not found */ }
                     }
-                }
+                }*/
             }
             // Else clauses
             None => {
@@ -256,6 +283,48 @@ impl Evaluator {
                     self.ast = Some(expression);
                     self.start_evaluating()?;
                 }
+            }
+            _ => {
+                // Nothing to do
+            }
+        }
+        Ok(EvalResult::EmptyResult)
+    }
+
+    // Evaluate given condition
+    fn evaluate_condition_expression(&mut self, l_expr: Node, operator: Token, r_expr: Node) -> Result<bool, Box<dyn error::Error>> {
+        // Evaluate comparison with given operator
+        match operator {
+            Token::Equals => {
+                if self.evaluate(l_expr)? == self.evaluate(r_expr)?
+                {
+                    return Ok(true);
+                }
+                return Ok(false);
+            }
+            // Return error if nothing was matched
+            _ => {
+                return Err(format!("Invalid comparison operator {0:?}", operator).into())
+            }
+        }
+    }
+
+
+    // Evaluate while expression, Condition for the loop and action to be executed
+    fn evaluate_while_expression(
+        &mut self,
+        condition: Option<Node>,
+        then_branch: Vec<Node>
+    ) -> Result<EvalResult, Box<dyn error::Error>> {
+        // Check condition
+        match condition {
+            // Check expression
+            Some(Node::ConditionExpression { l_expr, operator, r_expr }) => {
+
+            }
+            // Loop without conditions
+            None => {
+                // TODO
             }
             _ => {
                 // Nothing to do
